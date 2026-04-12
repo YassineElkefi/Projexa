@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { HttpClient, HttpBackend } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
@@ -24,7 +24,12 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   currentUser$ = this.currentUserSubject.asObservable();
 
-  constructor(private http: HttpClient, private router: Router) {
+  // ✅ FIX 1: Use HttpBackend to bypass the authInterceptor for all auth calls
+  // This breaks the circular dependency: AuthService → HttpClient → authInterceptor → AuthService
+  private http = new HttpClient(inject(HttpBackend));
+
+  constructor(private router: Router) {
+    // ✅ FIX 2: loadUserFromStorage is now safe because this.http bypasses the interceptor
     this.loadUserFromStorage();
   }
 
@@ -48,7 +53,19 @@ export class AuthService {
   }
 
   logout(): void {
-    this.http.post(`${this.API}/logout`, {}).subscribe();
+    const accessToken = this.getAccessToken();
+    const refreshToken = this.getRefreshToken();
+
+    // ✅ Send both tokens — backend needs access token to auth the request
+    // and refresh token to invalidate the session
+    this.http.post(`${this.API}/logout`, 
+      { refreshToken },  // ✅ send refresh token in body so backend can blacklist it
+      { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
+    ).subscribe({
+      error: () => {} // ✅ silently ignore — we clear locally regardless
+    });
+
+    // ✅ Always clear locally, don't wait for server response
     this.clearTokens();
     this.currentUserSubject.next(null);
     this.router.navigate(['/login']);
@@ -62,7 +79,11 @@ export class AuthService {
   }
 
   fetchCurrentUser(): Observable<User> {
-    return this.http.get<User>(`${this.API}/me`).pipe(
+    // ✅ FIX 4: Manually attach access token since interceptor is bypassed on this.http
+    const accessToken = this.getAccessToken();
+    return this.http.get<User>(`${this.API}/me`, {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {}
+    }).pipe(
       tap(user => this.currentUserSubject.next(user)),
     );
   }
@@ -90,6 +111,7 @@ export class AuthService {
       this.fetchCurrentUser().subscribe();
     }
   }
+
   verifyEmail(token: string): Observable<any> {
     return this.http.get(`${this.API}/verify-email`, { params: { token } });
   }
