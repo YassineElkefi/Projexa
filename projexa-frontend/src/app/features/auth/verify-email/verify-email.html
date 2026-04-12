@@ -1,0 +1,42 @@
+<div class="page">
+  <div class="ambient">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+  </div>
+
+  <div class="card">
+
+    <!-- Loading -->
+    <ng-container *ngIf="status() === 'loading'">
+      <div class="spinner"></div>
+      <h2>Verifying your email…</h2>
+      <p>Please wait a moment.</p>
+    </ng-container>
+
+    <!-- Success -->
+    <ng-container *ngIf="status() === 'success'">
+      <div class="icon-wrap success">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h2>Email verified!</h2>
+      <p>Your account is now active. You can sign in.</p>
+      <a routerLink="/login" class="btn">Go to login</a>
+    </ng-container>
+
+    <!-- Error -->
+    <ng-container *ngIf="status() === 'error'">
+      <div class="icon-wrap error">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </div>
+      <h2>Verification failed</h2>
+      <p>The link is invalid or has already expired. Request a new one.</p>
+      <a routerLink="/login" class="btn">Back to login</a>
+    </ng-container>
+
+  </div>
+</div>

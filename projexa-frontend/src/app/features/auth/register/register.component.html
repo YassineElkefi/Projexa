@@ -1,0 +1,183 @@
+<div class="page">
+  <div class="ambient">
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+  </div>
+
+  <div class="card">
+
+    <!-- ── Header ─────────────────────────────────────────── -->
+    <header class="card-header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="10" fill="#0f0f0f"/>
+          <path d="M9 16L14 21L23 11" stroke="#e8ff47" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h1>Create account</h1>
+      <p class="sub">Join us — it takes less than a minute</p>
+    </header>
+
+    <!-- ── Form (shown when not registered) ───────────────── -->
+    <ng-container *ngIf="!registered()">
+
+      <!-- Step indicator -->
+      <div class="steps">
+        <div class="step" [class.active]="step() === 1" [class.done]="step() > 1">
+          <span class="step-dot">
+            <svg *ngIf="step() > 1" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span *ngIf="step() === 1">1</span>
+          </span>
+          <span class="step-label">Profile</span>
+        </div>
+        <div class="step-line" [class.done]="step() > 1"></div>
+        <div class="step" [class.active]="step() === 2">
+          <span class="step-dot"><span>2</span></span>
+          <span class="step-label">Security</span>
+        </div>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+
+        <!-- ── Step 1 : Profile ──────────────────────────── -->
+        <div class="step-panel" *ngIf="step() === 1">
+
+          <div class="row-2">
+            <div class="field" [class.error]="isFieldInvalid('firstName')">
+              <label>First name</label>
+              <input type="text" formControlName="firstName" placeholder="Jane" autocomplete="given-name"/>
+              <span class="error-msg" *ngIf="isFieldInvalid('firstName')">Required</span>
+            </div>
+            <div class="field" [class.error]="isFieldInvalid('lastName')">
+              <label>Last name</label>
+              <input type="text" formControlName="lastName" placeholder="Doe" autocomplete="family-name"/>
+              <span class="error-msg" *ngIf="isFieldInvalid('lastName')">Required</span>
+            </div>
+          </div>
+
+          <div class="field" [class.error]="isFieldInvalid('email')">
+            <label>Email address</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <input type="email" formControlName="email" placeholder="jane@example.com" autocomplete="email"/>
+            </div>
+            <span class="error-msg" *ngIf="isFieldInvalid('email')">Enter a valid email</span>
+          </div>
+
+          <button type="button" class="btn-submit" (click)="nextStep()">
+            Continue
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- ── Step 2 : Security ─────────────────────────── -->
+        <div class="step-panel" *ngIf="step() === 2">
+
+          <div class="field" [class.error]="isFieldInvalid('password')">
+            <label>Password</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="11" width="18" height="11" rx="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                placeholder="Min. 8 characters"
+                autocomplete="new-password"
+              />
+              <button type="button" class="toggle-pw" (click)="togglePassword()">
+                <svg *ngIf="!showPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg *ngIf="showPassword()" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              </button>
+            </div>
+            <span class="error-msg" *ngIf="isFieldInvalid('password')">Min. 8 characters required</span>
+          </div>
+
+          <!-- Strength meter -->
+          <div class="strength-wrap" *ngIf="form.get('password')?.value">
+            <div class="strength-bar">
+              <span class="strength-fill" [style.width.%]="strengthPct()" [class]="strengthClass()"></span>
+            </div>
+            <span class="strength-label" [class]="strengthClass()">{{ strengthLabel() }}</span>
+          </div>
+
+          <div class="field" [class.error]="isPasswordMismatch()">
+            <label>Confirm password</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="11" width="18" height="11" rx="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="confirmPassword"
+                placeholder="Repeat password"
+                autocomplete="new-password"
+              />
+            </div>
+            <span class="error-msg" *ngIf="isPasswordMismatch()">Passwords don't match</span>
+          </div>
+
+          <div class="server-error" *ngIf="serverError()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            {{ serverError() }}
+          </div>
+
+          <div class="btn-row">
+            <button type="button" class="btn-back" (click)="goBack()">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+              </svg>
+              Back
+            </button>
+            <button type="submit" class="btn-submit flex-1" [class.loading]="loading()">
+              <span *ngIf="!loading()">Create account</span>
+              <span class="spinner" *ngIf="loading()"></span>
+            </button>
+          </div>
+
+        </div>
+      </form>
+
+      <footer class="card-footer">
+        Already have an account? <a routerLink="/login">Sign in</a>
+      </footer>
+
+    </ng-container>
+
+    <!-- ── Success state ───────────────────────────────────── -->
+    <div class="success-panel" *ngIf="registered()">
+      <div class="success-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <h2>Account created!</h2>
+      <p>We've sent a verification link to <strong>{{ form.get('email')?.value }}</strong>. Check your inbox.</p>
+      <a routerLink="/login" class="btn-submit go-login">Go to login</a>
+    </div>
+
+  </div>
+</div>

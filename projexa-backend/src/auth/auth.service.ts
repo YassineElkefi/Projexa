@@ -1,0 +1,89 @@
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { UsersService } from '../users/users.service';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { MailService } from '../mail/mail.service';
+import { v4 as uuidv4 } from 'uuid';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService,
+    private mailService: MailService,
+  ) {}
+
+  async register(dto: RegisterDto) {
+    const existing = await this.usersService.findByEmail(dto.email);
+    if (existing) throw new BadRequestException('Email already in use');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 12);
+    const verificationToken = uuidv4();
+
+    const user = await this.usersService.create({
+      ...dto,
+      password: hashedPassword,
+      emailVerificationToken: verificationToken,
+    });
+
+    await this.mailService.sendVerificationEmail(user.email, verificationToken);
+    return { message: 'Registration successful. Please verify your email.' };
+  }
+
+  async login(dto: LoginDto) {
+    const user = await this.usersService.findByEmail(dto.email);
+    if (!user) throw new UnauthorizedException('Invalid credentials');
+
+    const passwordMatch = await bcrypt.compare(dto.password, user.password);
+    if (!passwordMatch) throw new UnauthorizedException('Invalid credentials');
+
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    await this.usersService.saveRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
+  }
+
+  async logout(userId: number) {
+    await this.usersService.saveRefreshToken(userId, null);
+    return { message: 'Logged out successfully' };
+  }
+
+  async refreshTokens(userId: number, refreshToken: string) {
+    const user = await this.validateRefreshToken(userId, refreshToken);
+    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    await this.usersService.saveRefreshToken(user.id, tokens.refreshToken);
+    return tokens;
+  }
+
+  async validateRefreshToken(userId: number, refreshToken: string) {
+    const user = await this.usersService.findById(userId);
+    if (!user || !user.refreshToken) throw new UnauthorizedException();
+
+    const tokenMatch = await bcrypt.compare(refreshToken, user.refreshToken);
+    if (!tokenMatch) throw new UnauthorizedException('Invalid refresh token');
+    return user;
+  }
+
+  async verifyEmail(token: string) {
+    const user = await this.usersService.findByVerificationToken(token);
+    if (!user) throw new BadRequestException('Invalid verification token');
+    await this.usersService.markEmailVerified(user.id);
+    return { message: 'Email verified successfully' };
+  }
+
+  private async generateTokens(userId: number, email: string, role: string) {
+    const payload = { sub: userId, email, role };
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwtService.signAsync(payload, {
+        secret: process.env.JWT_ACCESS_SECRET,
+        expiresIn: '15m',
+      }),
+      this.jwtService.signAsync(payload, {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: '7d',
+      }),
+    ]);
+    return { accessToken, refreshToken };
+  }
+}
