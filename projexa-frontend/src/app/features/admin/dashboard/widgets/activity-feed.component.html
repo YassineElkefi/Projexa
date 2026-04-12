@@ -1,0 +1,40 @@
+<div class="feed-card">
+  <div class="feed-header">
+    <h2 class="feed-title">Recent Activity</h2>
+  </div>
+
+  @if (loading()) {
+    @for (i of [1,2,3,4,5]; track i) {
+      <div class="feed-item skeleton-item">
+        <div class="skeleton-dot"></div>
+        <div class="skeleton-lines">
+          <div class="skeleton-line long"></div>
+          <div class="skeleton-line short"></div>
+        </div>
+      </div>
+    }
+  } @else if (items().length === 0) {
+    <div class="feed-empty">
+      <span class="material-symbols-outlined">inbox</span>
+      <p>No recent activity</p>
+    </div>
+  } @else {
+    <div class="feed-list">
+      @for (item of items(); track item.id) {
+        <div class="feed-item" [attr.data-color]="colorFor(item.type)">
+          <div class="feed-dot">
+            <span class="material-symbols-outlined">{{ iconFor(item.type) }}</span>
+          </div>
+          <div class="feed-content">
+            <p class="feed-message">{{ item.message }}</p>
+            <div class="feed-meta">
+              <span class="feed-actor">{{ item.actor }}</span>
+              <span class="feed-sep">·</span>
+              <span class="feed-time">{{ item.timestamp | date: 'MMM d, h:mm a' }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

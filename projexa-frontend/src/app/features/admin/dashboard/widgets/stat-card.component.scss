@@ -1,0 +1,114 @@
+$colors: (
+  indigo: (bg: rgba(232, 255, 71, 0.12), icon: #e8ff47, border: rgba(232, 255, 71, 0.22)),
+  emerald: (bg: rgba(71, 197, 255, 0.12), icon: #47c5ff, border: rgba(71, 197, 255, 0.22)),
+  amber:   (bg: rgba(255, 171, 64, 0.12), icon: #ffab40, border: rgba(255, 171, 64, 0.22)),
+  rose:    (bg: rgba(255, 107, 107, 0.12), icon: #ff6b6b, border: rgba(255, 107, 107, 0.22)),
+);
+
+.stat-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: #111;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+
+  @each $name, $map in $colors {
+    &[data-color='#{$name}'] .stat-icon {
+      background: map-get($map, bg);
+      border-color: map-get($map, border);
+
+      .material-symbols-outlined {
+        color: map-get($map, icon);
+      }
+    }
+  }
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .material-symbols-outlined {
+    font-size: 1.5rem;
+    font-variation-settings: 'FILL' 1;
+  }
+}
+
+.stat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #f5f5f5;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.38);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.125rem;
+}
+
+.stat-trend {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  margin-top: 0.375rem;
+
+  &.up   { color: #e8ff47; }
+  &.down { color: #ff8080; }
+}
+
+.trend-icon {
+  font-size: 0.875rem;
+}
+
+// Skeleton
+.skeleton-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 0.625rem;
+  background: rgba(255, 255, 255, 0.06);
+  animation: pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.skeleton-value {
+  width: 80px;
+  height: 28px;
+  border-radius: 0.375rem;
+  background: rgba(255, 255, 255, 0.06);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-label {
+  width: 120px;
+  height: 14px;
+  border-radius: 0.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  animation: pulse 1.5s ease-in-out infinite 0.15s;
+  margin-top: 0.375rem;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}

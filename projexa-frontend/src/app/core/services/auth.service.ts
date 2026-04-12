@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpBackend } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 
@@ -45,10 +45,11 @@ export class AuthService {
     return this.http.post(`${this.API}/register`, data);
   }
 
-  login(email: string, password: string): Observable<AuthTokens> {
+  /** Completes after tokens are saved and the current user profile is loaded. */
+  login(email: string, password: string): Observable<User> {
     return this.http.post<AuthTokens>(`${this.API}/login`, { email, password }).pipe(
       tap(tokens => this.saveTokens(tokens)),
-      tap(() => this.fetchCurrentUser().subscribe()),
+      switchMap(() => this.fetchCurrentUser()),
     );
   }
 
@@ -114,5 +115,13 @@ export class AuthService {
 
   verifyEmail(token: string): Observable<any> {
     return this.http.get(`${this.API}/verify-email`, { params: { token } });
+  }
+
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.API}/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, password: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.API}/reset-password`, { token, password });
   }
 }

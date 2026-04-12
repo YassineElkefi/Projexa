@@ -1,0 +1,107 @@
+<div class="detail-page">
+  <a class="back-link" routerLink="/admin/users">
+    <span class="material-symbols-outlined">arrow_back</span>
+    Back to Users
+  </a>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading user…</p>
+    </div>
+  } @else if (!user()) {
+    <div class="error-state">
+      <span class="material-symbols-outlined">person_off</span>
+      <p>User not found</p>
+    </div>
+  } @else {
+    <div class="detail-grid">
+
+      <!-- Profile card -->
+      <div class="profile-card">
+        <div class="profile-avatar">
+          @if (user()!.avatarUrl) {
+            <img [src]="user()!.avatarUrl" [alt]="user()!.firstName" />
+          } @else {
+            <span>{{ user()!.firstName.charAt(0) }}</span>
+          }
+        </div>
+        <h2 class="profile-name">{{ user()!.firstName }} {{ user()!.lastName }}</h2>
+        <p class="profile-email">{{ user()!.email }}</p>
+        <span class="status-badge" [attr.data-status]="user()!.status">{{ user()!.status | titlecase }}</span>
+
+        <div class="profile-meta">
+          <div class="meta-row">
+            <span class="meta-key">Member since</span>
+            <span class="meta-val">{{ user()!.createdAt | date: 'MMM d, y' }}</span>
+          </div>
+          <div class="meta-row">
+            <span class="meta-key">Last active</span>
+            <span class="meta-val">{{ user()!.lastActiveAt ? (user()!.lastActiveAt | date: 'MMM d, y') : 'Never' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions card -->
+      <div class="actions-card">
+        <h3 class="card-title">Manage User</h3>
+
+        <div class="field">
+          <label class="field-label">Role</label>
+          <select
+            class="field-select"
+            [ngModel]="user()!.role"
+            (ngModelChange)="changeRole($event)"
+            [disabled]="saving()"
+          >
+            <option value="ADMIN">Admin</option>
+            <option value="TEAM_LEAD">Team Lead</option>
+            <option value="MEMBER">Member</option>
+          </select>
+        </div>
+
+        @if (user()!.status === 'PENDING') {
+          <div class="field">
+            <label class="field-label">Pending approval</label>
+            <button
+              type="button"
+              class="approve-btn"
+              [disabled]="saving()"
+              (click)="approveAccount()"
+            >
+              <span class="material-symbols-outlined">verified_user</span>
+              Approve account
+            </button>
+            <p class="field-hint">
+              Approves this user so they can sign in. You can still change their role above.
+            </p>
+          </div>
+        }
+
+        <div class="field">
+          <label class="field-label">Ban / unban</label>
+          <button
+            type="button"
+            class="ban-btn"
+            [class.banned]="user()!.status === 'BANNED'"
+            [disabled]="saving()"
+            (click)="toggleBan()"
+          >
+            <span class="material-symbols-outlined">
+              {{ user()!.status === 'BANNED' ? 'lock_open' : 'block' }}
+            </span>
+            {{ user()!.status === 'BANNED' ? 'Unban this user' : 'Ban this user' }}
+          </button>
+          <p class="field-hint">
+            @if (user()!.status === 'BANNED') {
+              This user is currently banned and cannot log in.
+            } @else {
+              Banning will prevent the user from accessing the platform.
+            }
+          </p>
+        </div>
+      </div>
+
+    </div>
+  }
+</div>
