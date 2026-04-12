@@ -1,14 +1,69 @@
 import { Routes } from '@angular/router';
-import { authGuard, redirectAdminFromMemberDashboardGuard } from '../../core/guards/auth.guard';
+import {
+  authGuard,
+  dashboardRootRedirectGuard,
+  redirectAdminFromMemberDashboardGuard,
+  teamLeadWorkspaceGuard,
+  memberWorkspaceGuard,
+} from '../../core/guards/auth.guard';
 
-// Placeholder dashboard component — replace with your real one
-// or point each child at an existing component you already have
 export const DASHBOARD_ROUTES: Routes = [
   {
     path: '',
-    canActivate: [authGuard, redirectAdminFromMemberDashboardGuard],
-    // Replace this loadComponent with your real dashboard shell once you build it
-    loadComponent: () =>
-      import('./dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [
+      authGuard,
+      redirectAdminFromMemberDashboardGuard,
+      dashboardRootRedirectGuard,
+    ],
+    children: [
+      {
+        path: 'lead',
+        canActivate: [teamLeadWorkspaceGuard],
+        loadComponent: () =>
+          import('./team-lead-workspace-layout.component').then(
+            m => m.TeamLeadWorkspaceLayoutComponent,
+          ),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./team-lead-home.component').then(m => m.TeamLeadHomeComponent),
+          },
+          {
+            path: 'projects',
+            loadComponent: () =>
+              import('./project-list.component').then(m => m.ProjectListComponent),
+          },
+          {
+            path: 'projects/:id',
+            loadComponent: () =>
+              import('../projects/project-detail.component').then(m => m.ProjectDetailComponent),
+          },
+        ],
+      },
+      {
+        path: 'member',
+        canActivate: [memberWorkspaceGuard],
+        loadComponent: () =>
+          import('./member-workspace-layout.component').then(m => m.MemberWorkspaceLayoutComponent),
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./member-home.component').then(m => m.MemberHomeComponent),
+          },
+          {
+            path: 'projects',
+            loadComponent: () =>
+              import('./project-list.component').then(m => m.ProjectListComponent),
+          },
+          {
+            path: 'projects/:id',
+            loadComponent: () =>
+              import('../projects/project-detail.component').then(m => m.ProjectDetailComponent),
+          },
+        ],
+      },
+    ],
   },
 ];

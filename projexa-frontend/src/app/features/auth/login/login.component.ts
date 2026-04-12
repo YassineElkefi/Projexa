@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { workspaceDashboardPath } from '../../../core/guards/auth.guard';
 
 @Component({
   selector: 'app-login',
@@ -52,7 +53,7 @@ export class LoginComponent {
         if (user.role === 'ADMIN') {
           this.router.navigate(['/admin']);
         } else {
-          this.router.navigate(['/dashboard']);
+          this.router.navigate([workspaceDashboardPath(user.role)]);
         }
       },
       error: (err) => {

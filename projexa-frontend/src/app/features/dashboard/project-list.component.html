@@ -1,0 +1,60 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-heading">Projects</h1>
+      <p class="page-sub">{{ rows().length }} project(s) you can access</p>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Team lead</th>
+            <th>Updated</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            @for (i of [1, 2, 3, 4, 5]; track i) {
+              <tr class="skeleton-row">
+                <td><div class="skel skel-lg"></div></td>
+                <td><div class="skel skel-md"></div></td>
+                <td><div class="skel skel-sm"></div></td>
+                <td><div class="skel skel-xs"></div></td>
+              </tr>
+            }
+          } @else if (rows().length === 0) {
+            <tr>
+              <td colspan="4" class="empty-cell">
+                <span class="material-symbols-outlined">folder_off</span>
+                <p>No projects yet</p>
+              </td>
+            </tr>
+          } @else {
+            @for (p of rows(); track p.id) {
+              <tr>
+                <td>
+                  <span class="proj-name">{{ p.name }}</span>
+                  @if (p.description) {
+                    <span class="proj-desc">{{ p.description }}</span>
+                  }
+                </td>
+                <td class="meta">
+                  {{ p.teamLead?.firstName }} {{ p.teamLead?.lastName }}
+                </td>
+                <td class="meta">{{ p.updatedAt | date: 'MMM d, y' }}</td>
+                <td class="actions">
+                  <a class="link-btn" [routerLink]="[base, 'projects', p.id]">Open</a>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
