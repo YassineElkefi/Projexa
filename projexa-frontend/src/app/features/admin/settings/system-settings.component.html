@@ -1,0 +1,187 @@
+<div class="settings-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-heading">System Settings</h1>
+      <p class="page-sub">Configure global platform behaviour</p>
+    </div>
+
+    @if (!loading()) {
+      <button class="save-btn" [disabled]="saving()" (click)="save()">
+        @if (saving()) {
+          <span class="btn-spinner"></span>
+          Saving…
+        } @else if (saved()) {
+          <span class="material-symbols-outlined">check_circle</span>
+          Saved!
+        } @else {
+          <span class="material-symbols-outlined">save</span>
+          Save Changes
+        }
+      </button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Loading settings…</p>
+    </div>
+  } @else {
+    <div class="settings-grid">
+
+      <!-- General -->
+      <section class="settings-card">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon indigo">tune</span>
+          <div>
+            <h2 class="card-title">General</h2>
+            <p class="card-sub">Basic platform identity</p>
+          </div>
+        </div>
+
+        <div class="fields">
+          <div class="field">
+            <label class="field-label">Platform Name</label>
+            <input
+              class="field-input"
+              type="text"
+              [ngModel]="settings().appName"
+              (ngModelChange)="updateField('appName', $event)"
+              placeholder="Nexus"
+            />
+          </div>
+          <div class="field">
+            <label class="field-label">Support Email</label>
+            <input
+              class="field-input"
+              type="email"
+              [ngModel]="settings().supportEmail"
+              (ngModelChange)="updateField('supportEmail', $event)"
+              placeholder="support@yourapp.com"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Access Control -->
+      <section class="settings-card">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon emerald">lock_person</span>
+          <div>
+            <h2 class="card-title">Access Control</h2>
+            <p class="card-sub">Registration and roles</p>
+          </div>
+        </div>
+
+        <div class="fields">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Allow Registration</span>
+              <span class="toggle-desc">New users can create accounts</span>
+            </div>
+            <button
+              class="toggle-switch"
+              [class.on]="settings().allowRegistration"
+              (click)="updateField('allowRegistration', !settings().allowRegistration)"
+              role="switch"
+              [attr.aria-checked]="settings().allowRegistration"
+            >
+              <span class="toggle-thumb"></span>
+            </button>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Default Role for New Users</label>
+            <select
+              class="field-select"
+              [ngModel]="settings().defaultUserRole"
+              (ngModelChange)="updateField('defaultUserRole', $event)"
+            >
+              <option value="MEMBER">Member</option>
+              <option value="TEAM_LEAD">Team Lead</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field-label">Max Projects per Team</label>
+            <input
+              class="field-input"
+              type="number"
+              [ngModel]="settings().maxProjectsPerTeam"
+              (ngModelChange)="updateField('maxProjectsPerTeam', +$event)"
+              min="1"
+              max="500"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- Notifications -->
+      <section class="settings-card">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon amber">notifications</span>
+          <div>
+            <h2 class="card-title">Notifications</h2>
+            <p class="card-sub">Email and alert settings</p>
+          </div>
+        </div>
+
+        <div class="fields">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Email Notifications</span>
+              <span class="toggle-desc">Send transactional emails via Resend</span>
+            </div>
+            <button
+              class="toggle-switch"
+              [class.on]="settings().emailNotificationsEnabled"
+              (click)="updateField('emailNotificationsEnabled', !settings().emailNotificationsEnabled)"
+              role="switch"
+              [attr.aria-checked]="settings().emailNotificationsEnabled"
+            >
+              <span class="toggle-thumb"></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Danger Zone -->
+      <section class="settings-card danger">
+        <div class="card-header">
+          <span class="material-symbols-outlined card-icon rose">warning</span>
+          <div>
+            <h2 class="card-title">Danger Zone</h2>
+            <p class="card-sub">Affects all users immediately</p>
+          </div>
+        </div>
+
+        <div class="fields">
+          <div class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Maintenance Mode</span>
+              <span class="toggle-desc">Lock the platform to all non-admin users</span>
+            </div>
+            <button
+              class="toggle-switch"
+              [class.on]="settings().maintenanceMode"
+              [class.danger-toggle]="true"
+              (click)="updateField('maintenanceMode', !settings().maintenanceMode)"
+              role="switch"
+              [attr.aria-checked]="settings().maintenanceMode"
+            >
+              <span class="toggle-thumb"></span>
+            </button>
+          </div>
+
+          @if (settings().maintenanceMode) {
+            <div class="danger-notice">
+              <span class="material-symbols-outlined">info</span>
+              Maintenance mode is ON. Regular users cannot access the platform until this is disabled.
+            </div>
+          }
+        </div>
+      </section>
+
+    </div>
+  }
+</div>
