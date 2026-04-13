@@ -5,6 +5,7 @@ import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationBellComponent } from '../../../core/components/notification-bell/notification-bell.component';
+import { AlertService } from '../../../core/services/alert.service';
 
 @Component({
   selector: 'app-admin-topbar',
@@ -16,6 +17,7 @@ import { NotificationBellComponent } from '../../../core/components/notification
 export class AdminTopbarComponent {
   private router = inject(Router);
   protected auth = inject(AuthService);
+  private alert = inject(AlertService);
 
   pageTitle = toSignal(
     this.router.events.pipe(
@@ -32,6 +34,10 @@ export class AdminTopbarComponent {
   }
 
   logout(): void {
-    this.auth.logout();
+    this.alert.confirm('You will be logged out of your account.', 'Are you sure?').then(result => {
+      if (result.isConfirmed) {
+        this.auth.logout();
+      }
+    });
   }
 }

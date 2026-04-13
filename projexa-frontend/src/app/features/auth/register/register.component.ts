@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { AlertService } from '../../../core/services/alert.service';
 
 function passwordMatchValidator(control: AbstractControl) {
   const password = control.get('password');
@@ -58,6 +59,7 @@ export class RegisterComponent {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
+    private alert: AlertService,
   ) {
     this.form = this.fb.group(
       {
@@ -116,12 +118,13 @@ export class RegisterComponent {
       next: () => {
         this.loading.set(false);
         this.registered.set(true);
+        this.alert.success('Registration successful! Please check your email.', 'Check email');
       },
       error: (err: any) => {
         this.loading.set(false);
-        this.serverError.set(
-          err?.error?.message || 'Registration failed. Please try again.',
-        );
+        const msg = err?.error?.message || 'Registration failed. Please try again.';
+        this.serverError.set(msg);
+        this.alert.error(msg, 'Registration Failed');
       },
     });
   }

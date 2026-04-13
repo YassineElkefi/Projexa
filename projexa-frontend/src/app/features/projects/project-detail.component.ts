@@ -12,6 +12,7 @@ import {
 } from '../../core/services/project.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AdminUserService } from '../admin/services/admin-user.service';
+import { AlertService } from '../../core/services/alert.service';
 
 @Component({
   selector: 'app-project-detail',
@@ -26,6 +27,7 @@ export class ProjectDetailComponent implements OnInit {
   private projects = inject(ProjectService);
   auth = inject(AuthService);
   private adminUsers = inject(AdminUserService);
+  private alert = inject(AlertService);
 
   projectId = signal<number | null>(null);
   detail = signal<ProjectDetailResponse | null>(null);
@@ -329,13 +331,14 @@ export class ProjectDetailComponent implements OnInit {
         this.detailPanelTask.set(this.normalizeTaskDto(upd));
         this.refreshTasks();
         this.saving.set(false);
+        this.alert.success('Changes saved successfully');
       },
       error: err => {
         this.saving.set(false);
         const msg = err?.error?.message;
-        this.tablePatchError.set(
-          Array.isArray(msg) ? msg.join(', ') : msg || 'Save failed',
-        );
+        const finalMsg = Array.isArray(msg) ? msg.join(', ') : msg || 'Save failed';
+        this.tablePatchError.set(finalMsg);
+        this.alert.error(finalMsg, 'Update Failed');
       },
     });
   }
@@ -351,8 +354,12 @@ export class ProjectDetailComponent implements OnInit {
         this.inviteEmail.set('');
         this.projects.assignable(id).subscribe({ next: u => this.assignable.set(u) });
         this.saving.set(false);
+        this.alert.success(`Member invited: ${email}`);
       },
-      error: () => this.saving.set(false),
+      error: err => {
+        this.saving.set(false);
+        this.alert.error(err?.error?.message || 'Could not add member', 'Add Failed');
+      },
     });
   }
 
@@ -365,8 +372,12 @@ export class ProjectDetailComponent implements OnInit {
         this.applyDetail(d);
         this.projects.assignable(id).subscribe({ next: u => this.assignable.set(u) });
         this.saving.set(false);
+        this.alert.success('Member removed');
       },
-      error: () => this.saving.set(false),
+      error: err => {
+        this.saving.set(false);
+        this.alert.error(err?.error?.message || 'Could not remove member');
+      },
     });
   }
 
@@ -404,8 +415,12 @@ export class ProjectDetailComponent implements OnInit {
           this.newTaskParentId.set(null);
           this.refreshTasks();
           this.saving.set(false);
+          this.alert.success('Task created successfully');
         },
-        error: () => this.saving.set(false),
+        error: err => {
+          this.saving.set(false);
+          this.alert.error(err?.error?.message || 'Could not create task');
+        },
       });
   }
 
@@ -476,14 +491,18 @@ export class ProjectDetailComponent implements OnInit {
     const id = this.projectId();
     if (id == null || !this.canManageProject()) return;
     const kind = task.parentId ? 'task' : 'ticket';
-    if (!confirm(`Delete ${kind} “${task.title}”?`)) return;
-    this.projects.deleteTask(id, task.id).subscribe({
-      next: () => {
-        if (this.detailPanelTask()?.id === task.id) {
-          this.closeTicketDetail();
-        }
-        this.refreshTasks();
-      },
+    this.alert.confirm(`Delete ${kind} “${task.title}”?`).then(result => {
+      if (!result.isConfirmed) return;
+      this.projects.deleteTask(id, task.id).subscribe({
+        next: () => {
+          if (this.detailPanelTask()?.id === task.id) {
+            this.closeTicketDetail();
+          }
+          this.refreshTasks();
+          this.alert.success(`${kind} deleted`);
+        },
+        error: err => this.alert.error(err?.error?.message || 'Could not delete'),
+      });
     });
   }
 

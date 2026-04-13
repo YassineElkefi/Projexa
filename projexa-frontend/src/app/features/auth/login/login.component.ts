@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angula
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { workspaceDashboardPath } from '../../../core/guards/auth.guard';
+import { AlertService } from '../../../core/services/alert.service';
 
 @Component({
   selector: 'app-login',
@@ -22,6 +23,7 @@ export class LoginComponent {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
+    private alert: AlertService,
   ) {
     this.form = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -50,6 +52,7 @@ export class LoginComponent {
     this.authService.login(email, password).subscribe({
       next: user => {
         this.loading.set(false);
+        this.alert.success(`Welcome back, ${user.firstName}!`, 'Login Successful');
         if (user.role === 'ADMIN') {
           this.router.navigate(['/admin']);
         } else {
@@ -58,7 +61,9 @@ export class LoginComponent {
       },
       error: (err) => {
         this.loading.set(false);
-        this.serverError.set(err?.error?.message || 'Invalid credentials. Please try again.');
+        const msg = err?.error?.message || 'Invalid credentials. Please try again.';
+        this.serverError.set(msg);
+        this.alert.error(msg, 'Login Failed');
       },
     });
   }
