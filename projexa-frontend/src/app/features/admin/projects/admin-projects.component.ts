@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ProjectService, ProjectSummary } from '../../../core/services/project.service';
 import { AdminUserService } from '../services/admin-user.service';
+import { AlertService } from '../../../core/services/alert.service';
 
 @Component({
   selector: 'app-admin-projects',
@@ -15,6 +16,7 @@ import { AdminUserService } from '../services/admin-user.service';
 export class AdminProjectsComponent implements OnInit {
   private projects = inject(ProjectService);
   private users = inject(AdminUserService);
+  private alert = inject(AlertService);
 
   name = signal('');
   description = signal('');
@@ -76,11 +78,14 @@ export class AdminProjectsComponent implements OnInit {
           this.description.set('');
           this.saving.set(false);
           this.refreshList();
+          this.alert.success('Project created successfully');
         },
         error: err => {
           this.saving.set(false);
           const msg = err?.error?.message;
-          this.error.set(Array.isArray(msg) ? msg.join(', ') : msg || 'Could not create project');
+          const finalMsg = Array.isArray(msg) ? msg.join(', ') : msg || 'Could not create project';
+          this.error.set(finalMsg);
+          this.alert.error(finalMsg, 'Creation Failed');
         },
       });
   }

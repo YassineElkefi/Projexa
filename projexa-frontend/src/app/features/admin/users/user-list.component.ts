@@ -5,6 +5,7 @@ import { RouterLink, ActivatedRoute } from '@angular/router';
 import { AdminUserService, AdminUser, UserFilters, UserRole, UserStatus } from '../services/admin-user.service';
 import { debounceTime, distinctUntilChanged, Subject, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { AlertService } from '../../../core/services/alert.service';
 
 @Component({
   selector: 'app-user-list',
@@ -16,6 +17,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 export class UserListComponent implements OnInit {
   private userService = inject(AdminUserService);
   private route       = inject(ActivatedRoute);
+  private alert       = inject(AlertService);
 
   users      = signal<AdminUser[]>([]);
   total      = signal(0);
@@ -99,17 +101,28 @@ export class UserListComponent implements OnInit {
   }
 
   toggleBan(user: AdminUser): void {
-    this.actionId.set(user.id);
-    const action = user.status === 'BANNED'
-      ? this.userService.unbanUser(user.id)
-      : this.userService.banUser(user.id);
+    const isBan = user.status !== 'BANNED';
+    const verb = isBan ? 'ban' : 'unban';
 
-    action.subscribe({
-      next: updated => {
-        this.users.update(list => list.map(u => u.id === updated.id ? updated : u));
-        this.actionId.set(null);
-      },
-      error: () => this.actionId.set(null),
+    this.alert.confirm(`You are about to ${verb} ${user.firstName} ${user.lastName}.`, `Are you sure?`).then(result => {
+      if (!result.isConfirmed) return;
+
+      this.actionId.set(user.id);
+      const action = isBan
+        ? this.userService.banUser(user.id)
+        : this.userService.unbanUser(user.id);
+
+      action.subscribe({
+        next: updated => {
+          this.users.update(list => list.map(u => u.id === updated.id ? updated : u));
+          this.actionId.set(null);
+          this.alert.success(`User ${verb}ned successfully`);
+        },
+        error: err => {
+          this.actionId.set(null);
+          this.alert.error(err?.error?.message || `Could not ${verb} user`);
+        },
+      });
     });
   }
 
@@ -120,8 +133,12 @@ export class UserListComponent implements OnInit {
       next: updated => {
         this.users.update(list => list.map(u => u.id === updated.id ? updated : u));
         this.actionId.set(null);
+        this.alert.success('User approved');
       },
-      error: () => this.actionId.set(null),
+      error: () => {
+        this.actionId.set(null);
+        this.alert.error('Could not approve user');
+      },
     });
   }
 
@@ -131,8 +148,12 @@ export class UserListComponent implements OnInit {
       next: updated => {
         this.users.update(list => list.map(u => u.id === updated.id ? updated : u));
         this.actionId.set(null);
+        this.alert.success(`Role changed to ${role}`);
       },
-      error: () => this.actionId.set(null),
+      error: () => {
+        this.actionId.set(null);
+        this.alert.error('Could not change role');
+      },
     });
   }
 
@@ -188,11 +209,14 @@ export class UserListComponent implements OnInit {
           this.cLast.set('');
           this.cRole.set('MEMBER');
           this.fetchUsers();
+          this.alert.success('User created successfully');
         },
         error: err => {
           this.createBusy.set(false);
           const msg = err?.error?.message;
-          this.createError.set(Array.isArray(msg) ? msg.join(', ') : msg || 'Could not create user');
+          const finalMsg = Array.isArray(msg) ? msg.join(', ') : msg || 'Could not create user';
+          this.createError.set(finalMsg);
+          this.alert.error(finalMsg, 'Creation Failed');
         },
       });
   }
