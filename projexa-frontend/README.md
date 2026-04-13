@@ -1,59 +1,85 @@
-# ProjexaFrontend
+# 🎨 Projexa Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.1.2.
+<p align="center">
+  <img src="https://img.shields.io/badge/Angular_21-DD0031?style=for-the-badge&logo=angular&logoColor=white" alt="Angular" />
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Socket.io_Client-010101?style=for-the-badge&logo=socket.io&logoColor=white" alt="Socket.io" />
+</p>
 
-## Development server
+## 📖 Description
 
-To start a local development server, run:
+The official frontend application for **Projexa**. A sleek, responsive, and interactive dashboard built with **Angular 21** and **Tailwind CSS**.
 
+---
+
+## ✨ Features
+
+- 🖥️ **Responsive Design**: Mobile-first approach using Tailwind CSS.
+- 🚦 **State Management**: Reactive data patterns with RxJS.
+- 🔑 **Secure Routing**: Protected routes and JWT-based session management.
+- 📡 **Live Feedback**: Real-time updates for projects and notifications.
+- 💅 **Modern UI**: Polished components and smooth transitions.
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: [Angular 21](https://angular.dev/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **State/Reactivity**: [RxJS](https://rxjs.dev/)
+- **Authentication**: [@auth0/angular-jwt](https://github.com/auth0/angular-jwt)
+- **UI Alerts**: [SweetAlert2](https://sweetalert2.github.io/)
+- **Testing**: [Vitest](https://vitest.dev/)
+
+---
+
+## ⚙️ Development
+
+### Installation
 ```bash
-ng serve
+$ npm install
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+### Development Server
+```bash
+$ npm run start
+# OR
+$ ng serve
+```
+Navigate to `http://localhost:4200/`. The app will automatically reload if you change any of the source files.
 
-## Code scaffolding
+### Build
+```bash
+$ npm run build
+```
+The build artifacts will be stored in the `dist/` directory.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+---
+
+## 📁 Folder Structure
 
 ```bash
-ng generate component component-name
+src/
+└── app/
+    ├── 🏛️ core/       # Singleton services, guards, interceptors
+    └── 🚀 features/   # Lazy-loaded feature modules
+        ├── 👤 admin/     # Admin management screens
+        ├── 🔐 auth/      # Login & Registration
+        ├── 📊 dashboard/ # Main overview
+        └── 📋 projects/  # Project list & details
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+---
+
+## 🧪 Testing
 
 ```bash
-ng generate --help
+$ npm run test
 ```
 
-## Building
+---
 
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+<p align="center">
+  <b>Projexa UI</b> • Responsive & Interactive
+</p>
