@@ -1,6 +1,6 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector } from '@angular/core';
 import { HttpClient, HttpBackend } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 
@@ -27,6 +27,7 @@ export class AuthService {
   // ✅ FIX 1: Use HttpBackend to bypass the authInterceptor for all auth calls
   // This breaks the circular dependency: AuthService → HttpClient → authInterceptor → AuthService
   private http = new HttpClient(inject(HttpBackend));
+  private injector = inject(Injector);
 
   constructor(private router: Router) {
     // ✅ FIX 2: loadUserFromStorage is now safe because this.http bypasses the interceptor
@@ -45,10 +46,11 @@ export class AuthService {
     return this.http.post(`${this.API}/register`, data);
   }
 
-  login(email: string, password: string): Observable<AuthTokens> {
+  /** Completes after tokens are saved and the current user profile is loaded. */
+  login(email: string, password: string): Observable<User> {
     return this.http.post<AuthTokens>(`${this.API}/login`, { email, password }).pipe(
       tap(tokens => this.saveTokens(tokens)),
-      tap(() => this.fetchCurrentUser().subscribe()),
+      switchMap(() => this.fetchCurrentUser()),
     );
   }
 
@@ -58,11 +60,17 @@ export class AuthService {
 
     // ✅ Send both tokens — backend needs access token to auth the request
     // and refresh token to invalidate the session
-    this.http.post(`${this.API}/logout`, 
+    this.http.post(`${this.API}/logout`,
       { refreshToken },  // ✅ send refresh token in body so backend can blacklist it
       { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
     ).subscribe({
       error: () => {} // ✅ silently ignore — we clear locally regardless
+    });
+
+    // Tear down notifications/socket for this user session.
+    // Lazy import avoids circular dependency (NotificationService → AuthService).
+    import('./notification.service').then(({ NotificationService }) => {
+      this.injector.get(NotificationService).teardown();
     });
 
     // ✅ Always clear locally, don't wait for server response
@@ -114,5 +122,13 @@ export class AuthService {
 
   verifyEmail(token: string): Observable<any> {
     return this.http.get(`${this.API}/verify-email`, { params: { token } });
+  }
+
+  forgotPassword(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.API}/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, password: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.API}/reset-password`, { token, password });
   }
 }

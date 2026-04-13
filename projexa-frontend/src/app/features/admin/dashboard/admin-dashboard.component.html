@@ -1,0 +1,100 @@
+<div class="dashboard-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-heading">Overview</h1>
+      <p class="page-sub">Platform health and activity at a glance</p>
+    </div>
+    <a class="shortcut-btn" routerLink="/admin/users">
+      <span class="material-symbols-outlined">group</span>
+      Manage Users
+    </a>
+  </div>
+
+  <section class="stats-grid">
+    <app-stat-card
+      label="Total Users"
+      [value]="stats()?.totalUsers ?? 0"
+      icon="group"
+      color="indigo"
+      [trend]="stats()?.userGrowth ?? 0"
+      [loading]="loading()"
+    />
+    <app-stat-card
+      label="Active Projects"
+      [value]="stats()?.activeProjects ?? 0"
+      icon="folder_open"
+      color="emerald"
+      [trend]="stats()?.projectGrowth ?? 0"
+      [loading]="loading()"
+    />
+    <app-stat-card
+      label="Open Tasks"
+      [value]="stats()?.openTasks ?? 0"
+      icon="task_alt"
+      color="amber"
+      [trend]="stats()?.taskGrowth ?? 0"
+      [loading]="loading()"
+    />
+    <app-stat-card
+      label="Banned Users"
+      [value]="stats()?.bannedUsers ?? 0"
+      icon="block"
+      color="rose"
+      [loading]="loading()"
+    />
+  </section>
+
+  <section class="bottom-grid">
+    <div class="feed-wrapper">
+      <app-activity-feed [items]="activity()" [loading]="loading()" />
+    </div>
+
+    <div class="quick-actions-card">
+      <div class="qa-header">
+        <h2 class="qa-title">Quick Actions</h2>
+      </div>
+      <div class="qa-list">
+        <a class="qa-item" routerLink="/admin/projects">
+          <div class="qa-icon indigo">
+            <span class="material-symbols-outlined">folder_open</span>
+          </div>
+          <div class="qa-text">
+            <span class="qa-label">Projects</span>
+            <span class="qa-desc">Create a project and assign a team lead</span>
+          </div>
+          <span class="material-symbols-outlined qa-arrow">chevron_right</span>
+        </a>
+        <a class="qa-item" routerLink="/admin/users">
+          <div class="qa-icon indigo">
+            <span class="material-symbols-outlined">person_add</span>
+          </div>
+          <div class="qa-text">
+            <span class="qa-label">Add user</span>
+            <span class="qa-desc">Create a user account from the Users page</span>
+          </div>
+          <span class="material-symbols-outlined qa-arrow">chevron_right</span>
+        </a>
+        <a class="qa-item" routerLink="/admin/users" [queryParams]="{ filter: 'banned' }">
+          <div class="qa-icon rose">
+            <span class="material-symbols-outlined">block</span>
+          </div>
+          <div class="qa-text">
+            <span class="qa-label">Review Bans</span>
+            <span class="qa-desc">View and manage banned accounts</span>
+          </div>
+          <span class="material-symbols-outlined qa-arrow">chevron_right</span>
+        </a>
+        <a class="qa-item" routerLink="/admin/settings">
+          <div class="qa-icon slate">
+            <span class="material-symbols-outlined">settings</span>
+          </div>
+          <div class="qa-text">
+            <span class="qa-label">System Settings</span>
+            <span class="qa-desc">Configure platform behaviour</span>
+          </div>
+          <span class="material-symbols-outlined qa-arrow">chevron_right</span>
+        </a>
+      </div>
+    </div>
+  </section>
+</div>

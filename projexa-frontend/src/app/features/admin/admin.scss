@@ -23,16 +23,22 @@
 }
 
 .orb-1 {
-  width: 320px; height: 320px;
-  background: #b847ff;
-  top: -80px; left: -60px;
+  width: 320px;
+  height: 320px;
+  background: #e8ff47;
+  top: -80px;
+  left: -60px;
+  opacity: 0.14;
 }
 
 .orb-2 {
-  width: 240px; height: 240px;
+  width: 240px;
+  height: 240px;
   background: #47c5ff;
-  bottom: -60px; right: -40px;
+  bottom: -60px;
+  right: -40px;
   animation-delay: -6s;
+  opacity: 0.14;
 }
 
 @keyframes drift {
@@ -67,9 +73,9 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: rgba(184, 71, 255, 0.1);
-  border: 1.5px solid rgba(184, 71, 255, 0.25);
-  color: #c47aff;
+  background: rgba(232, 255, 71, 0.1);
+  border: 1.5px solid rgba(232, 255, 71, 0.25);
+  color: #e8ff47;
   display: flex;
   align-items: center;
   justify-content: center;

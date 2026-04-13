@@ -1,0 +1,25 @@
+<div class="stat-card" [attr.data-color]="color()">
+  @if (loading()) {
+    <div class="skeleton-icon"></div>
+    <div class="stat-body">
+      <div class="skeleton-value"></div>
+      <div class="skeleton-label"></div>
+    </div>
+  } @else {
+    <div class="stat-icon">
+      <span class="material-symbols-outlined">{{ icon() }}</span>
+    </div>
+    <div class="stat-body">
+      <div class="stat-value">{{ value() }}</div>
+      <div class="stat-label">{{ label() }}</div>
+      @if (trend() !== 0) {
+        <div class="stat-trend" [class.up]="trend()! > 0" [class.down]="trend()! < 0">
+          <span class="material-symbols-outlined trend-icon">
+            {{ trend()! > 0 ? 'trending_up' : 'trending_down' }}
+          </span>
+          <span>{{ trend()! > 0 ? '+' : '' }}{{ trend() }}% this month</span>
+        </div>
+      }
+    </div>
+  }
+</div>

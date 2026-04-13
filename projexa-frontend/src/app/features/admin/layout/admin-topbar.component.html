@@ -1,0 +1,29 @@
+<header class="topbar">
+  <div class="topbar-left">
+    <h1 class="page-title">{{ pageTitle() }}</h1>
+  </div>
+
+  <div class="topbar-right">
+    <div class="admin-badge">
+      <span class="material-symbols-outlined">shield_person</span>
+      <span>Admin</span>
+    </div>
+
+    <app-notification-bell />
+
+    <div class="user-info">
+      <div class="avatar">
+        @if (auth.currentUser?.avatarUrl) {
+          <img [src]="auth.currentUser!.avatarUrl" [alt]="auth.currentUser!.firstName" />
+        } @else {
+          <span>{{ auth.currentUser?.firstName?.charAt(0) | uppercase }}</span>
+        }
+      </div>
+      <span class="user-name">{{ auth.currentUser?.firstName }} {{ auth.currentUser?.lastName }}</span>
+    </div>
+
+    <button class="logout-btn" (click)="logout()" title="Logout">
+      <span class="material-symbols-outlined">logout</span>
+    </button>
+  </div>
+</header>

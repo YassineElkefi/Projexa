@@ -1,0 +1,44 @@
+<div class="topbar">
+  <div>
+    <h1>Team lead workspace{{ userName ? ', ' + userName : '' }}</h1>
+    <p class="topbar-sub">Manage projects, members, workflows, tickets, and tasks</p>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">Your projects</span>
+    <span class="stat-value">{{ loading() ? '—' : projectCount() }}</span>
+    <a class="stat-badge up" routerLink="/dashboard/lead/projects">Open</a>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Role</span>
+    <span class="stat-value role-line">Team lead</span>
+    <span class="stat-hint">Invite members, create tickets and tasks, and assign work</span>
+  </div>
+</div>
+
+<div class="content-row">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Projects</span>
+      <a routerLink="/dashboard/lead/projects" class="panel-link">View all</a>
+    </div>
+    <p class="panel-copy">
+      Create tickets, tasks, categories, and status flows. Members you add join immediately — no invite
+      acceptance step.
+    </p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Quick actions</span>
+    </div>
+    <div class="quick-actions">
+      <a class="qa-btn" routerLink="/dashboard/lead/projects">
+        <span class="material-symbols-outlined">folder_open</span>
+        Open projects
+      </a>
+    </div>
+  </div>
+</div>

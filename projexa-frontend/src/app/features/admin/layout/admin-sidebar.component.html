@@ -1,0 +1,51 @@
+<aside class="sidebar" [class.collapsed]="collapsed()">
+  <div class="sidebar-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+          <rect width="32" height="32" rx="10" fill="#0f0f0f" />
+          <path
+            d="M9 16L14 21L23 11"
+            stroke="#e8ff47"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </span>
+      @if (!collapsed()) {
+        <span class="brand-name">Projexa <span class="brand-suffix">Admin</span></span>
+      }
+    </div>
+    <button class="toggle-btn" (click)="toggle()">
+      <span class="material-symbols-outlined">
+        {{ collapsed() ? 'chevron_right' : 'chevron_left' }}
+      </span>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    @for (item of navItems; track item.route) {
+      <a
+        class="nav-item"
+        [routerLink]="item.route"
+        routerLinkActive="active"
+        [title]="collapsed() ? item.label : ''"
+      >
+        <span class="material-symbols-outlined nav-icon">{{ item.icon }}</span>
+        @if (!collapsed()) {
+          <span class="nav-label">{{ item.label }}</span>
+        }
+      </a>
+    }
+  </nav>
+<!-- 
+  <div class="sidebar-footer">
+    <a class="nav-item" routerLink="/dashboard" title="Back to App">
+      <span class="material-symbols-outlined nav-icon">arrow_back</span>
+      @if (!collapsed()) {
+        <span class="nav-label">Back to App</span>
+      }
+    </a>
+  </div> -->
+</aside>

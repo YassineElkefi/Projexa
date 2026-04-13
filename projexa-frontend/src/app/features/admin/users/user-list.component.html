@@ -1,0 +1,223 @@
+<div class="users-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-heading">User Management</h1>
+      <p class="page-sub">{{ total() }} total users</p>
+    </div>
+    <button type="button" class="add-user-btn" (click)="openCreate()">
+      <span class="material-symbols-outlined">person_add</span>
+      Add user
+    </button>
+  </div>
+
+  @if (createOpen()) {
+    <div class="modal-backdrop" (click)="closeCreate()"></div>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2>Add user</h2>
+        <button type="button" class="icon-close" (click)="closeCreate()" aria-label="Close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      @if (createError()) {
+        <p class="modal-error">{{ createError() }}</p>
+      }
+      <div class="modal-body">
+        <label class="field">
+          <span>Email</span>
+          <input type="email" class="field-input" [ngModel]="cEmail()" (ngModelChange)="cEmail.set($event)" />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" class="field-input" [ngModel]="cPassword()" (ngModelChange)="cPassword.set($event)" />
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>First name</span>
+            <input class="field-input" [ngModel]="cFirst()" (ngModelChange)="cFirst.set($event)" />
+          </label>
+          <label class="field">
+            <span>Last name</span>
+            <input class="field-input" [ngModel]="cLast()" (ngModelChange)="cLast.set($event)" />
+          </label>
+        </div>
+        <label class="field">
+          <span>Role</span>
+          <select class="field-input" [ngModel]="cRole()" (ngModelChange)="cRole.set($event)">
+            <option value="MEMBER">Member</option>
+            <option value="TEAM_LEAD">Team lead</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" (click)="closeCreate()">Cancel</button>
+        <button type="button" class="btn-primary" [disabled]="createBusy()" (click)="submitCreate()">
+          Create
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="search-wrap">
+      <span class="material-symbols-outlined search-icon">search</span>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Search by name or email…"
+        [value]="search()"
+        (input)="onSearchInput($any($event.target).value)"
+      />
+    </div>
+
+    <select
+      class="filter-select"
+      [ngModel]="roleFilter()"
+      (ngModelChange)="roleFilter.set($event); onFilterChange()"
+    >
+      @for (opt of roleOptions; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+
+    <select
+      class="filter-select"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="statusFilter.set($event); onFilterChange()"
+    >
+      @for (opt of statusOptions; track opt.value) {
+        <option [value]="opt.value">{{ opt.label }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-card">
+    <div class="table-wrap">
+      <table class="users-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th>Last Active</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            @for (i of [1,2,3,4,5,6,7,8]; track i) {
+              <tr class="skeleton-row">
+                <td><div class="skel skel-user"></div></td>
+                <td><div class="skel skel-badge"></div></td>
+                <td><div class="skel skel-badge"></div></td>
+                <td><div class="skel skel-text"></div></td>
+                <td><div class="skel skel-text"></div></td>
+                <td><div class="skel skel-actions"></div></td>
+              </tr>
+            }
+          } @else if (users().length === 0) {
+            <tr>
+              <td colspan="6" class="empty-cell">
+                <span class="material-symbols-outlined">person_search</span>
+                <p>No users found</p>
+              </td>
+            </tr>
+          } @else {
+            @for (user of users(); track user.id) {
+              <tr [class.processing]="actionId() === user.id">
+                <td>
+                  <div class="user-cell">
+                    <div class="avatar">
+                      @if (user.avatarUrl) {
+                        <img [src]="user.avatarUrl" [alt]="user.firstName" />
+                      } @else {
+                        <span>{{ user.firstName.charAt(0) }}</span>
+                      }
+                    </div>
+                    <div class="user-info">
+                      <a class="user-name" [routerLink]="['/admin/users', user.id]">
+                        {{ user.firstName }} {{ user.lastName }}
+                      </a>
+                      <span class="user-email">{{ user.email }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <td>
+                  <select
+                    class="role-select"
+                    [ngModel]="user.role"
+                    (ngModelChange)="changeRole(user, $event)"
+                    [disabled]="actionId() === user.id"
+                  >
+                    <option value="ADMIN">Admin</option>
+                    <option value="TEAM_LEAD">Team Lead</option>
+                    <option value="MEMBER">Member</option>
+                  </select>
+                </td>
+
+                <td>
+                  <span class="status-badge" [attr.data-status]="user.status">
+                    {{ user.status | titlecase }}
+                  </span>
+                </td>
+
+                <td class="meta-cell">{{ user.createdAt | date: 'MMM d, y' }}</td>
+                <td class="meta-cell">{{ user.lastActiveAt ? (user.lastActiveAt | date: 'MMM d') : '—' }}</td>
+
+                <td>
+                  <div class="action-btns">
+                    <a class="action-btn view" [routerLink]="['/admin/users', user.id]" title="View Profile">
+                      <span class="material-symbols-outlined">open_in_new</span>
+                    </a>
+                    @if (user.status === 'PENDING') {
+                      <button
+                        type="button"
+                        class="action-btn approve"
+                        [disabled]="actionId() === user.id"
+                        (click)="approveUser(user)"
+                        title="Approve account"
+                      >
+                        <span class="material-symbols-outlined">verified_user</span>
+                      </button>
+                    }
+                    <button
+                      type="button"
+                      class="action-btn"
+                      [class.unban]="user.status === 'BANNED'"
+                      [class.ban]="user.status !== 'BANNED'"
+                      [disabled]="actionId() === user.id"
+                      (click)="toggleBan(user)"
+                      [title]="user.status === 'BANNED' ? 'Unban User' : 'Ban User'"
+                    >
+                      <span class="material-symbols-outlined">
+                        {{ user.status === 'BANNED' ? 'lock_open' : 'block' }}
+                      </span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button class="page-btn" [disabled]="page() === 1" (click)="goToPage(page() - 1)">
+          <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        <span class="page-info">Page {{ page() }} of {{ totalPages() }}</span>
+        <button class="page-btn" [disabled]="page() === totalPages()" (click)="goToPage(page() + 1)">
+          <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+      </div>
+    }
+  </div>
+</div>

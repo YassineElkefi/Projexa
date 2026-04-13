@@ -39,6 +39,7 @@ export class AuthService {
     const passwordMatch = await bcrypt.compare(dto.password, user.password);
     if (!passwordMatch) throw new UnauthorizedException('Invalid credentials');
 
+    await this.usersService.updateLastActive(user.id);
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     await this.usersService.saveRefreshToken(user.id, tokens.refreshToken);
     return tokens;
@@ -51,6 +52,7 @@ export class AuthService {
 
   async refreshTokens(userId: number, refreshToken: string) {
     const user = await this.validateRefreshToken(userId, refreshToken);
+    await this.usersService.touchLastActiveIfStale(user.id);
     const tokens = await this.generateTokens(user.id, user.email, user.role);
     await this.usersService.saveRefreshToken(user.id, tokens.refreshToken);
     return tokens;
@@ -70,6 +72,38 @@ export class AuthService {
     if (!user) throw new BadRequestException('Invalid verification token');
     await this.usersService.markEmailVerified(user.id);
     return { message: 'Email verified successfully' };
+  }
+
+  async forgotPassword(email: string) {
+    const generic = {
+      message:
+        'If an account exists for that email, you will receive password reset instructions shortly.',
+    };
+    const user = await this.usersService.findByEmail(email.trim());
+    if (!user) return generic;
+
+    const token = uuidv4();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+    await this.usersService.setPasswordReset(user.id, token, expiresAt);
+    await this.mailService.sendPasswordResetEmail(user.email, token);
+    return generic;
+  }
+
+  async resetPassword(dto: { token: string; password: string }) {
+    const token = dto.token.trim();
+    const user = await this.usersService.findByPasswordResetToken(token);
+    if (
+      !user ||
+      !user.passwordResetExpires ||
+      user.passwordResetExpires.getTime() < Date.now()
+    ) {
+      throw new BadRequestException('Invalid or expired reset link. Please request a new one.');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, 12);
+    await this.usersService.completePasswordReset(user.id, hashedPassword);
+    await this.usersService.saveRefreshToken(user.id, null);
+    return { message: 'Your password was updated. You can sign in with your new password.' };
   }
 
   private async generateTokens(userId: number, email: string, role: string) {
