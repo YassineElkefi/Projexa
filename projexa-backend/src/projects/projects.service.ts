@@ -652,9 +652,9 @@ export class ProjectsService {
     const project = await this.assertProjectAccess(actor, projectId);
     const manager = this.isProjectTaskManager(actor, project);
 
+    // Load WITHOUT relations — avoids TypeORM overriding scalar FK changes
     const task = await this.taskRepo.findOne({
       where: { id: taskId, projectId },
-      relations: { status: true },
     });
     if (!task) throw new NotFoundException('Task not found');
 
@@ -669,6 +669,7 @@ export class ProjectsService {
       dto.statusId !== undefined && dto.statusId !== null
         ? Number(dto.statusId)
         : null;
+
     if (
       nextStatusId != null &&
       !Number.isNaN(nextStatusId) &&
@@ -683,8 +684,7 @@ export class ProjectsService {
     }
 
     if (dto.assigneeId !== undefined) {
-      const aid =
-        dto.assigneeId === null ? null : Number(dto.assigneeId);
+      const aid = dto.assigneeId === null ? null : Number(dto.assigneeId);
       if (aid != null) {
         if (Number.isNaN(aid)) throw new BadRequestException('Invalid assignee');
         await this.assertUserIsMember(projectId, aid);
@@ -699,7 +699,7 @@ export class ProjectsService {
         });
         if (!cat) throw new BadRequestException('Invalid category for this project');
       }
-      task.categoryId = dto.categoryId;
+      task.categoryId = dto.categoryId ?? null;
     }
 
     if (dto.title != null) task.title = dto.title.trim();
@@ -715,6 +715,37 @@ export class ProjectsService {
     if (manager && dto.sortOrder != null) task.sortOrder = dto.sortOrder;
 
     await this.taskRepo.save(task);
+    // Cascade status change to child tasks
+    if (
+      nextStatusId != null &&
+      !Number.isNaN(nextStatusId) &&
+      nextStatusId !== currentStatusId
+    ) {
+      const children = await this.taskRepo.find({
+        where: { projectId, parentId: taskId },
+      });
+
+      for (const child of children) {
+        const childCurrentStatusId = Number(child.statusId);
+        if (childCurrentStatusId === nextStatusId) continue;
+
+        const transitionCount = await this.transitionRepo.count({ where: { projectId } });
+        if (transitionCount > 0) {
+          const allowed = await this.transitionRepo.findOne({
+            where: {
+              projectId,
+              fromStatusId: childCurrentStatusId,
+              toStatusId: nextStatusId,
+            },
+          });
+          if (!allowed) continue;
+        }
+
+        child.statusId = nextStatusId;
+        await this.taskRepo.save(child);
+      }
+    }
+
     const full = await this.taskRepo.findOne({
       where: { id: taskId },
       relations: { assignee: true, reporter: true, status: true, category: true },

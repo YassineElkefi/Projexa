@@ -268,7 +268,7 @@ export class ProjectDetailComponent implements OnInit {
     const list = d.statuses.filter(
       s => Number(s.id) === cur || next.has(Number(s.id)),
     );
-    return list.length > 0 ? list : d.statuses;
+    return list;
   }
 
   transitionLabel(fromId: number, toId: number): string {
@@ -409,24 +409,39 @@ export class ProjectDetailComponent implements OnInit {
       });
   }
 
-  updateTaskRow(task: TaskDto, patch: Partial<TaskDto>): void {
-    const id = this.projectId();
-    if (id == null || !this.canEditTasks()) return;
+  updateTaskRow(task: TaskDto, patch: Partial<TaskUpdatePayload>): void {
+  const id = this.projectId();
+  if (id == null || !this.canEditTasks()) return;
 
-    const body: TaskUpdatePayload = {};
-    if (patch.statusId !== undefined) {
-      body.statusId = Number(patch.statusId);
-    }
+  // 1. Optimistically update the local signal so statusOptionsFor()
+  //    sees the NEW statusId immediately when re-rendering the select.
+  const updatedTask = { ...task, ...patch };
+  this.rootTickets.update(rows =>
+    rows.map(r => (r.id === task.id ? { ...r, ...patch } : r)),
+  );
+  // Also update child tasks if applicable
+  if (task.parentId != null) {
+    this.childTasks.update(m => {
+      const siblings = m[task.parentId!] ?? [];
+      return {
+        ...m,
+        [task.parentId!]: siblings.map(r =>
+          r.id === task.id ? { ...r, ...patch } : r,
+        ),
+      };
+    });
+  }
+
+  const body: TaskUpdatePayload = {};
+    if (patch.statusId !== undefined) body.statusId = Number(patch.statusId);
     if (patch.assigneeId !== undefined) {
-      body.assigneeId =
-        patch.assigneeId === null || patch.assigneeId === undefined
-          ? null
-          : Number(patch.assigneeId);
+      body.assigneeId = patch.assigneeId === null ? null : Number(patch.assigneeId);
     }
 
     this.tablePatchError.set(null);
     this.projects.updateTask(id, task.id, body).subscribe({
       next: () => {
+        // 2. Refresh to get canonical server state (status name, etc.)
         this.refreshTasks();
         const open = this.detailPanelTask();
         if (open?.id === task.id) {
@@ -436,11 +451,23 @@ export class ProjectDetailComponent implements OnInit {
         }
       },
       error: err => {
+        // 3. Revert optimistic update on failure
+        this.rootTickets.update(rows =>
+          rows.map(r => (r.id === task.id ? task : r)),
+        );
+        if (task.parentId != null) {
+          this.childTasks.update(m => {
+            const siblings = m[task.parentId!] ?? [];
+            return {
+              ...m,
+              [task.parentId!]: siblings.map(r => (r.id === task.id ? task : r)),
+            };
+          });
+        }
         const msg = err?.error?.message;
         this.tablePatchError.set(
           Array.isArray(msg) ? msg.join(', ') : msg || 'Update failed',
         );
-        this.refreshTasks();
       },
     });
   }
