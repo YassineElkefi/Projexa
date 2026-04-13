@@ -4,7 +4,60 @@
       <h1 class="page-heading">User Management</h1>
       <p class="page-sub">{{ total() }} total users</p>
     </div>
+    <button type="button" class="add-user-btn" (click)="openCreate()">
+      <span class="material-symbols-outlined">person_add</span>
+      Add user
+    </button>
   </div>
+
+  @if (createOpen()) {
+    <div class="modal-backdrop" (click)="closeCreate()"></div>
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <h2>Add user</h2>
+        <button type="button" class="icon-close" (click)="closeCreate()" aria-label="Close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      @if (createError()) {
+        <p class="modal-error">{{ createError() }}</p>
+      }
+      <div class="modal-body">
+        <label class="field">
+          <span>Email</span>
+          <input type="email" class="field-input" [ngModel]="cEmail()" (ngModelChange)="cEmail.set($event)" />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input type="password" class="field-input" [ngModel]="cPassword()" (ngModelChange)="cPassword.set($event)" />
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>First name</span>
+            <input class="field-input" [ngModel]="cFirst()" (ngModelChange)="cFirst.set($event)" />
+          </label>
+          <label class="field">
+            <span>Last name</span>
+            <input class="field-input" [ngModel]="cLast()" (ngModelChange)="cLast.set($event)" />
+          </label>
+        </div>
+        <label class="field">
+          <span>Role</span>
+          <select class="field-input" [ngModel]="cRole()" (ngModelChange)="cRole.set($event)">
+            <option value="MEMBER">Member</option>
+            <option value="TEAM_LEAD">Team lead</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" (click)="closeCreate()">Cancel</button>
+        <button type="button" class="btn-primary" [disabled]="createBusy()" (click)="submitCreate()">
+          Create
+        </button>
+      </div>
+    </div>
+  }
 
   <!-- Filters -->
   <div class="filters-bar">

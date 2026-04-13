@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsWhere } from 'typeorm';
+import { Repository, Like, FindOptionsWhere, In } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
 import { Role } from './enums/role.enum';
@@ -25,6 +25,22 @@ export class UsersService {
 
   async findById(id: number): Promise<User | null> {
     return this.usersRepo.findOne({ where: { id } });
+  }
+
+  async findByIds(ids: number[]): Promise<User[]> {
+    if (ids.length === 0) return [];
+    return this.usersRepo.find({
+      where: { id: In(ids) },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        avatarUrl: true,
+        status: true,
+      },
+    });
   }
 
   async findByVerificationToken(token: string): Promise<User | null> {
@@ -54,6 +70,33 @@ export class UsersService {
   async create(data: Partial<User>): Promise<User> {
     const user = this.usersRepo.create(data);
     return this.usersRepo.save(user);
+  }
+
+  async createByAdmin(data: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role: Role;
+  }): Promise<User> {
+    const email = data.email.trim().toLowerCase();
+    const existing = await this.findByEmail(email);
+    if (existing) throw new BadRequestException('Email already in use');
+
+    const hashedPassword = await bcrypt.hash(data.password, 12);
+    await this.create({
+      email,
+      password: hashedPassword,
+      firstName: data.firstName.trim(),
+      lastName: data.lastName.trim(),
+      role: data.role,
+      status: UserStatus.ACTIVE,
+      isEmailVerified: true,
+      emailVerificationToken: null as unknown as string,
+    });
+    const created = await this.findByEmail(email);
+    if (!created) throw new BadRequestException('Could not create user');
+    return this.findByIdOrThrow(created.id);
   }
 
   async saveRefreshToken(userId: number, token: string | null): Promise<void> {

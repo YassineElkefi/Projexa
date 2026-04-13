@@ -5,6 +5,7 @@ import { SystemSettings } from './entities/system-settings.entity';
 import { ActivityLog } from './entities/activity-log.entity';
 import { UsersService } from '../users/users.service';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
+import { ProjectsService } from '../projects/projects.service';
 
 @Injectable()
 export class AdminService implements OnModuleInit {
@@ -16,6 +17,7 @@ export class AdminService implements OnModuleInit {
     private activityRepo: Repository<ActivityLog>,
 
     private usersService: UsersService,
+    private projectsService: ProjectsService,
   ) {}
 
   // Seed a single settings row on startup if none exists
@@ -55,11 +57,12 @@ export class AdminService implements OnModuleInit {
         ? thisMonth > 0 ? 100 : 0
         : Math.round(((thisMonth - lastMonth) / lastMonth) * 100);
 
-    // Placeholders — wire these up once Project/Task entities exist
-    const activeProjects = 0;
-    const openTasks      = 0;
-    const projectGrowth  = 0;
-    const taskGrowth     = 0;
+    const [activeProjects, openTasks] = await Promise.all([
+      this.projectsService.countProjects(),
+      this.projectsService.countOpenTasks(),
+    ]);
+    const projectGrowth = 0;
+    const taskGrowth    = 0;
 
     const activity = await this.getRecentActivity(10);
 

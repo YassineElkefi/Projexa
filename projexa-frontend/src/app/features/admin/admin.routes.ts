@@ -33,6 +33,16 @@ export const ADMIN_ROUTES: Routes = [
         loadComponent: () =>
           import('./settings/system-settings.component').then(m => m.SystemSettingsComponent),
       },
+      {
+        path: 'projects',
+        loadComponent: () =>
+          import('./projects/admin-projects.component').then(m => m.AdminProjectsComponent),
+      },
+      {
+        path: 'projects/:id',
+        loadComponent: () =>
+          import('../projects/project-detail.component').then(m => m.ProjectDetailComponent),
+      },
     ],
   },
 ];

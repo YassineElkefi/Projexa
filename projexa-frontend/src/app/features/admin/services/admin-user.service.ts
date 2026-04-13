@@ -71,4 +71,14 @@ export class AdminUserService {
   deleteUser(id: number): Observable<void> {
     return this.http.delete<void>(`${this.API}/${id}`);
   }
+
+  createUser(body: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    role?: UserRole;
+  }): Observable<AdminUser> {
+    return this.http.post<AdminUser>(`${environment.apiUrl}/admin/users`, body);
+  }
 }

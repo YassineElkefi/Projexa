@@ -21,6 +21,7 @@ export class AdminSidebarComponent {
   navItems: NavItem[] = [
     { label: 'Dashboard',  icon: 'grid_view',       route: '/admin/dashboard' },
     { label: 'Users',      icon: 'group',            route: '/admin/users'     },
+    { label: 'Projects',   icon: 'folder_open',      route: '/admin/projects'  },
     { label: 'Settings',   icon: 'settings',         route: '/admin/settings'  },
   ];
 

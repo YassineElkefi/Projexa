@@ -1,0 +1,41 @@
+<div class="topbar">
+  <div>
+    <h1>Welcome back{{ userName ? ', ' + userName : '' }}</h1>
+    <p class="topbar-sub">Member workspace — open a project to update tickets you have access to</p>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card accent">
+    <span class="stat-label">Projects</span>
+    <span class="stat-value">{{ loading() ? '—' : projectCount() }}</span>
+    <a class="stat-badge" routerLink="/dashboard/member/projects">View projects</a>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Your role</span>
+    <span class="stat-value role-line">Member</span>
+    <span class="stat-hint">You can move tickets through the workflow and reassign them to teammates</span>
+  </div>
+</div>
+
+<div class="content-row">
+  <div class="panel">
+    <div class="panel-header">
+      <span>Tickets</span>
+    </div>
+    <p class="panel-copy">
+      Inside each project, use the status and assignee fields on tasks to keep work moving. Team leads still manage
+      members, new tasks, and workflow setup.
+    </p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <span>Go to projects</span>
+    </div>
+    <a class="qa-btn" routerLink="/dashboard/member/projects">
+      <span class="material-symbols-outlined">assignment</span>
+      My projects
+    </a>
+  </div>
+</div>

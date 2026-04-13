@@ -1,6 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from '../services/auth.service';
+import { workspaceDashboardPath } from './auth.guard';
 import { map, take, catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
 
@@ -19,7 +20,7 @@ export const adminGuard: CanActivateFn = () => {
     take(1),
     map(user => {
       if (user?.role === 'ADMIN') return true;
-      router.navigate(['/dashboard']);
+      router.navigate([workspaceDashboardPath(user?.role)]);
       return false;
     }),
     catchError(() => {

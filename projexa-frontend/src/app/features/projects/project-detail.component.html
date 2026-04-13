@@ -1,0 +1,420 @@
+@if (loading()) {
+  <div class="loading-state">Loading project…</div>
+} @else if (detail(); as d) {
+  <div class="page">
+    @if (tablePatchError()) {
+      <div class="toast-error" role="alert">{{ tablePatchError() }}</div>
+    }
+
+    <a class="back-link" [routerLink]="listPath">
+      <span class="material-symbols-outlined">arrow_back</span>
+      Projects
+    </a>
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-heading">{{ d.project.name }}</h1>
+        @if (d.project.description) {
+          <p class="page-sub">{{ d.project.description }}</p>
+        }
+      </div>
+    </div>
+
+    @if (isAdmin) {
+      <div class="card">
+        <h2 class="card-title">Team lead</h2>
+        <p class="card-hint">Only platform admins can reassign the team lead.</p>
+        <select
+          class="field-select"
+          [ngModel]="d.project.teamLeadId"
+          (ngModelChange)="onTeamLeadChange($event)"
+          [disabled]="saving()"
+        >
+          @for (opt of leadOptions(); track opt.id) {
+            <option [ngValue]="opt.id">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+    }
+
+    <div class="grid-2">
+      <div class="card">
+        <h2 class="card-title">Members</h2>
+        @if (canManageProject()) {
+          <div class="inline-form">
+            <input
+              type="email"
+              class="field-input"
+              placeholder="Email to add (no invite — added immediately)"
+              [ngModel]="inviteEmail()"
+              (ngModelChange)="inviteEmail.set($event)"
+            />
+            <button type="button" class="btn-primary" [disabled]="saving()" (click)="addMember()">
+              Add
+            </button>
+          </div>
+        }
+        <ul class="member-list">
+          @for (m of d.members; track m.id) {
+            <li>
+              <div>
+                <span class="m-name">{{ m.user.firstName }} {{ m.user.lastName }}</span>
+                <span class="m-email">{{ m.user.email }}</span>
+              </div>
+              @if (canManageProject() && m.userId !== d.project.teamLeadId) {
+                <button type="button" class="btn-ghost" (click)="removeMember(m.userId)">Remove</button>
+              }
+            </li>
+          }
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Categories</h2>
+        <div class="chips">
+          @for (c of d.categories; track c.id) {
+            <span class="chip" [style.border-color]="c.color || 'rgba(255,255,255,0.12)'">{{ c.name }}</span>
+          }
+        </div>
+        @if (canManageProject()) {
+          <div class="inline-form">
+            <input
+              class="field-input"
+              placeholder="New category"
+              [ngModel]="newCategoryName()"
+              (ngModelChange)="newCategoryName.set($event)"
+            />
+            <button type="button" class="btn-secondary" (click)="addCategory()">Add</button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Status workflow</h2>
+      <p class="card-hint">
+        Tickets may only move along the allowed transitions below (OpenProject-style). Clearing all transitions in the
+        API would allow any change; by default we seed a reversible chain.
+      </p>
+      <div class="status-row">
+        @for (s of d.statuses; track s.id) {
+          <span class="status-pill" [class.closed]="s.isClosed">{{ s.name }}</span>
+        }
+      </div>
+      @if (d.transitions.length) {
+        <ul class="transition-list">
+          @for (t of d.transitions; track t.id) {
+            <li>{{ transitionLabel(t.fromStatusId, t.toStatusId) }}</li>
+          }
+        </ul>
+      } @else {
+        <p class="card-hint">No custom transitions — any status change is allowed.</p>
+      }
+    </div>
+
+    @if (canManageProject()) {
+      <div class="card">
+        <h2 class="card-title">{{ newTaskParentId() ? 'New task' : 'New ticket' }}</h2>
+        @if (newTaskParentId(); as pid) {
+          <p class="banner">
+            Task under ticket #{{ pid }}
+            <button type="button" class="btn-ghost sm" (click)="clearChildTaskParent()">Clear</button>
+          </p>
+        }
+        <div class="task-form-grid">
+          <input
+            class="field-input"
+            placeholder="Title"
+            [ngModel]="newTaskTitle()"
+            (ngModelChange)="newTaskTitle.set($event)"
+          />
+          <select
+            class="field-select"
+            [ngModel]="newTaskType()"
+            (ngModelChange)="newTaskType.set($event)"
+          >
+            @for (ty of taskTypes; track ty) {
+              <option [ngValue]="ty">{{ formatTaskType(ty) }}</option>
+            }
+          </select>
+          <select
+            class="field-select"
+            [ngModel]="newTaskStatusId()"
+            (ngModelChange)="newTaskStatusId.set($event)"
+          >
+            @for (s of d.statuses; track s.id) {
+              <option [ngValue]="s.id">{{ s.name }}</option>
+            }
+          </select>
+          <select
+            class="field-select"
+            [ngModel]="newTaskCategoryId()"
+            (ngModelChange)="newTaskCategoryId.set($event)"
+          >
+            <option [ngValue]="null">No category</option>
+            @for (c of d.categories; track c.id) {
+              <option [ngValue]="c.id">{{ c.name }}</option>
+            }
+          </select>
+          <select
+            class="field-select"
+            [ngModel]="newTaskAssigneeId()"
+            (ngModelChange)="newTaskAssigneeId.set($event)"
+          >
+            <option [ngValue]="null">Unassigned</option>
+            @for (u of assignable(); track u.id) {
+              <option [ngValue]="u.id">{{ u.firstName }} {{ u.lastName }}</option>
+            }
+          </select>
+          <button type="button" class="btn-primary" [disabled]="saving()" (click)="createTask()">Create</button>
+        </div>
+      </div>
+    }
+
+    <div class="card">
+      <h2 class="card-title">Tickets</h2>
+      <p class="card-hint table-hint">
+        Top-level rows are tickets. Expand a ticket to see its tasks. Click a title to open details.
+      </p>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Status</th>
+              <th>Assignee</th>
+              @if (canManageProject()) {
+                <th></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (ticket of rootTickets(); track ticket.id) {
+              <tr>
+                <td class="narrow">
+                  <button
+                    type="button"
+                    class="icon-btn"
+                    (click)="toggleExpand(ticket.id)"
+                    [class.on]="isExpanded(ticket.id)"
+                  >
+                    <span class="material-symbols-outlined">{{
+                      isExpanded(ticket.id) ? 'expand_more' : 'chevron_right'
+                    }}</span>
+                  </button>
+                </td>
+                <td>
+                  <button type="button" class="title-link" (click)="openTicketDetail(ticket)">{{ ticket.title }}</button>
+                </td>
+                <td><span class="type-badge">{{ formatTaskType(ticket.type) }}</span></td>
+                <td>
+                  @if (canEditTasks()) {
+                    <select
+                      class="field-select sm"
+                      name="row-st-{{ ticket.id }}"
+                      [ngModel]="ticket.statusId"
+                      (ngModelChange)="updateTaskRow(ticket, { statusId: $event })"
+                      [ngModelOptions]="{ standalone: true }"
+                    >
+                      @for (s of statusOptionsFor(ticket); track s.id) {
+                        <option [ngValue]="s.id">{{ s.name }}</option>
+                      }
+                    </select>
+                  } @else {
+                    {{ ticket.status?.name }}
+                  }
+                </td>
+                <td>
+                  @if (canEditTasks()) {
+                    <select
+                      class="field-select sm"
+                      name="row-as-{{ ticket.id }}"
+                      [ngModel]="ticket.assigneeId"
+                      (ngModelChange)="updateTaskRow(ticket, { assigneeId: $event })"
+                      [ngModelOptions]="{ standalone: true }"
+                    >
+                      <option [ngValue]="null">—</option>
+                      @for (u of assignable(); track u.id) {
+                        <option [ngValue]="u.id">{{ u.firstName }} {{ u.lastName }}</option>
+                      }
+                    </select>
+                  } @else {
+                    {{ ticket.assignee ? ticket.assignee.firstName + ' ' + ticket.assignee.lastName : '—' }}
+                  }
+                </td>
+                @if (canManageProject()) {
+                  <td class="row-actions">
+                    <button type="button" class="btn-ghost sm" (click)="startChildTask(ticket.id)">Add task</button>
+                    <button type="button" class="btn-ghost sm danger" (click)="deleteTask(ticket)">Delete</button>
+                  </td>
+                }
+              </tr>
+              @if (isExpanded(ticket.id)) {
+                <tr class="sub-head-row">
+                  <td></td>
+                  <td [attr.colspan]="canManageProject() ? 5 : 4" class="sub-head-label">Tasks</td>
+                </tr>
+                @for (st of childTasksFor(ticket.id); track st.id) {
+                  <tr class="sub-row">
+                    <td></td>
+                    <td>
+                      <span class="sub-indent">↳</span>
+                      <button type="button" class="title-link" (click)="openTicketDetail(st)">{{ st.title }}</button>
+                    </td>
+                    <td><span class="type-badge">{{ formatTaskType(st.type) }}</span></td>
+                    <td>
+                      @if (canEditTasks()) {
+                        <select
+                          class="field-select sm"
+                          name="row-st-{{ st.id }}"
+                          [ngModel]="st.statusId"
+                          (ngModelChange)="updateTaskRow(st, { statusId: $event })"
+                          [ngModelOptions]="{ standalone: true }"
+                        >
+                          @for (s of statusOptionsFor(st); track s.id) {
+                            <option [ngValue]="s.id">{{ s.name }}</option>
+                          }
+                        </select>
+                      } @else {
+                        {{ st.status?.name }}
+                      }
+                    </td>
+                    <td>
+                      @if (canEditTasks()) {
+                        <select
+                          class="field-select sm"
+                          name="row-as-{{ st.id }}"
+                          [ngModel]="st.assigneeId"
+                          (ngModelChange)="updateTaskRow(st, { assigneeId: $event })"
+                          [ngModelOptions]="{ standalone: true }"
+                        >
+                          <option [ngValue]="null">—</option>
+                          @for (u of assignable(); track u.id) {
+                            <option [ngValue]="u.id">{{ u.firstName }} {{ u.lastName }}</option>
+                          }
+                        </select>
+                      } @else {
+                        {{ st.assignee ? st.assignee.firstName + ' ' + st.assignee.lastName : '—' }}
+                      }
+                    </td>
+                    @if (canManageProject()) {
+                      <td class="row-actions">
+                        <button type="button" class="btn-ghost sm danger" (click)="deleteTask(st)">Delete</button>
+                      </td>
+                    }
+                  </tr>
+                }
+                @if (childTasksFor(ticket.id).length === 0 && isExpanded(ticket.id)) {
+                  <tr class="sub-row muted">
+                    <td></td>
+                    <td [attr.colspan]="canManageProject() ? 5 : 4">No tasks yet</td>
+                  </tr>
+                }
+              }
+            }
+            @if (rootTickets().length === 0) {
+              <tr>
+                <td [attr.colspan]="canManageProject() ? 6 : 5" class="empty-cell">No tickets yet</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+}
+
+@if (detailPanelTask(); as pt) {
+  <div class="sheet-backdrop" (click)="closeTicketDetail()"></div>
+  <aside class="detail-sheet" (click)="$event.stopPropagation()">
+    <div class="sheet-header">
+      <h2 class="sheet-title">{{ panelIsTicket() ? 'Ticket' : 'Task' }} #{{ pt.id }}</h2>
+      <button type="button" class="icon-close-sheet" (click)="closeTicketDetail()" aria-label="Close">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+
+    @if (detailPanelLoading()) {
+      <p class="sheet-loading">Loading…</p>
+    } @else {
+      @if (tablePatchError()) {
+        <p class="sheet-error">{{ tablePatchError() }}</p>
+      }
+
+      <div class="sheet-body">
+        <label class="sheet-field">
+          <span>Title</span>
+          <input class="field-input" [(ngModel)]="pt.title" name="ptitle" />
+        </label>
+
+        <label class="sheet-field">
+          <span>Description</span>
+          <textarea class="field-textarea" rows="5" [(ngModel)]="pt.description" name="pdesc"></textarea>
+        </label>
+
+        <label class="sheet-field">
+          <span>Status</span>
+          <select
+            class="field-select"
+            [(ngModel)]="pt.statusId"
+            name="pstatus"
+            [ngModelOptions]="{ standalone: true }"
+          >
+            @for (s of statusOptionsFor(pt); track s.id) {
+              <option [ngValue]="s.id">{{ s.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="sheet-field">
+          <span>Assignee</span>
+          <select
+            class="field-select"
+            [(ngModel)]="pt.assigneeId"
+            name="passign"
+            [ngModelOptions]="{ standalone: true }"
+          >
+            <option [ngValue]="null">Unassigned</option>
+            @for (u of assignable(); track u.id) {
+              <option [ngValue]="u.id">{{ u.firstName }} {{ u.lastName }}</option>
+            }
+          </select>
+        </label>
+
+        @if (canManageProject()) {
+          <label class="sheet-field">
+            <span>Type</span>
+            <select class="field-select" [(ngModel)]="pt.type" name="ptype">
+              @for (ty of taskTypes; track ty) {
+                <option [ngValue]="ty">{{ formatTaskType(ty) }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="sheet-field">
+            <span>Category</span>
+            <select class="field-select" [(ngModel)]="pt.categoryId" name="pcat">
+              <option [ngValue]="null">None</option>
+              @for (c of detail()?.categories ?? []; track c.id) {
+                <option [ngValue]="c.id">{{ c.name }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (pt.parentId) {
+          <p class="sheet-meta">Parent ticket #{{ pt.parentId }}</p>
+        }
+      </div>
+
+      <div class="sheet-footer">
+        <button type="button" class="btn-ghost" (click)="closeTicketDetail()">Close</button>
+        @if (canEditTasks()) {
+          <button type="button" class="btn-primary" [disabled]="saving()" (click)="saveTicketDetail()">Save</button>
+        }
+      </div>
+    }
+  </aside>
+}

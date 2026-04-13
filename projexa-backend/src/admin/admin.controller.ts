@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Put,
   Delete,
@@ -23,6 +24,7 @@ import { UsersService } from '../users/users.service';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
+import { CreateAdminUserDto } from './dto/create-admin-user.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,6 +43,24 @@ export class AdminController {
   }
 
   // ─── Users ────────────────────────────────────────────────────────────────
+
+  @Post('users')
+  async createUser(@Body() dto: CreateAdminUserDto, @Req() req: Request) {
+    const actor = req.user as any;
+    const user  = await this.usersService.createByAdmin({
+      email:     dto.email,
+      password:  dto.password,
+      firstName: dto.firstName,
+      lastName:  dto.lastName,
+      role:      dto.role ?? Role.MEMBER,
+    });
+    await this.adminService.logActivity({
+      type:    'user_registered',
+      message: `${user.firstName} ${user.lastName} was added to the platform`,
+      actor:   `${actor.firstName} ${actor.lastName}`,
+    });
+    return user;
+  }
 
   @Get('users')
   getUsers(@Query() query: GetUsersQueryDto) {

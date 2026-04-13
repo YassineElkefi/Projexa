@@ -29,6 +29,15 @@ export class UserListComponent implements OnInit {
   page       = signal(1);
   pageSize   = 10;
 
+  createOpen = signal(false);
+  createBusy = signal(false);
+  createError = signal<string | null>(null);
+  cEmail = signal('');
+  cPassword = signal('');
+  cFirst = signal('');
+  cLast = signal('');
+  cRole = signal<UserRole>('MEMBER');
+
   private search$ = new Subject<string>();
 
   totalPages = computed(() => Math.ceil(this.total() / this.pageSize));
@@ -140,4 +149,51 @@ export class UserListComponent implements OnInit {
     { value: 'BANNED', label: 'Banned' },
     { value: 'PENDING', label: 'Pending' },
   ];
+
+  openCreate(): void {
+    this.createError.set(null);
+    this.createOpen.set(true);
+  }
+
+  closeCreate(): void {
+    this.createOpen.set(false);
+  }
+
+  submitCreate(): void {
+    const email = this.cEmail().trim();
+    const password = this.cPassword();
+    const firstName = this.cFirst().trim();
+    const lastName = this.cLast().trim();
+    if (!email || !password || password.length < 8 || !firstName || !lastName) {
+      this.createError.set('Fill all fields; password must be at least 8 characters.');
+      return;
+    }
+    this.createError.set(null);
+    this.createBusy.set(true);
+    this.userService
+      .createUser({
+        email,
+        password,
+        firstName,
+        lastName,
+        role: this.cRole(),
+      })
+      .subscribe({
+        next: () => {
+          this.createBusy.set(false);
+          this.createOpen.set(false);
+          this.cEmail.set('');
+          this.cPassword.set('');
+          this.cFirst.set('');
+          this.cLast.set('');
+          this.cRole.set('MEMBER');
+          this.fetchUsers();
+        },
+        error: err => {
+          this.createBusy.set(false);
+          const msg = err?.error?.message;
+          this.createError.set(Array.isArray(msg) ? msg.join(', ') : msg || 'Could not create user');
+        },
+      });
+  }
 }
