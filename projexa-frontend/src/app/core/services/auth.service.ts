@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, Injector } from '@angular/core';
 import { HttpClient, HttpBackend } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap, switchMap } from 'rxjs';
 import { Router } from '@angular/router';
@@ -27,6 +27,7 @@ export class AuthService {
   // ✅ FIX 1: Use HttpBackend to bypass the authInterceptor for all auth calls
   // This breaks the circular dependency: AuthService → HttpClient → authInterceptor → AuthService
   private http = new HttpClient(inject(HttpBackend));
+  private injector = inject(Injector);
 
   constructor(private router: Router) {
     // ✅ FIX 2: loadUserFromStorage is now safe because this.http bypasses the interceptor
@@ -59,11 +60,17 @@ export class AuthService {
 
     // ✅ Send both tokens — backend needs access token to auth the request
     // and refresh token to invalidate the session
-    this.http.post(`${this.API}/logout`, 
+    this.http.post(`${this.API}/logout`,
       { refreshToken },  // ✅ send refresh token in body so backend can blacklist it
       { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} }
     ).subscribe({
       error: () => {} // ✅ silently ignore — we clear locally regardless
+    });
+
+    // Tear down notifications/socket for this user session.
+    // Lazy import avoids circular dependency (NotificationService → AuthService).
+    import('./notification.service').then(({ NotificationService }) => {
+      this.injector.get(NotificationService).teardown();
     });
 
     // ✅ Always clear locally, don't wait for server response

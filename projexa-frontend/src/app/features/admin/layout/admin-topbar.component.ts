@@ -4,11 +4,12 @@ import { Router, NavigationEnd, RouterLink } from '@angular/router';
 import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/services/auth.service';
+import { NotificationBellComponent } from '../../../core/components/notification-bell/notification-bell.component';
 
 @Component({
   selector: 'app-admin-topbar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, NotificationBellComponent],
   templateUrl: './admin-topbar.component.html',
   styleUrl: './admin-topbar.component.scss',
 })

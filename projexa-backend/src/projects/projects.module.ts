@@ -2,6 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersModule } from '../users/users.module';
 import { AdminModule } from '../admin/admin.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { Project } from './entities/project.entity';
 import { ProjectMember } from './entities/project-member.entity';
 import { ProjectCategory } from './entities/project-category.entity';
@@ -24,6 +25,7 @@ import { TaskTypeDataMigrationService } from './task-type-data-migration.service
     ]),
     UsersModule,
     forwardRef(() => AdminModule),
+    NotificationsModule,
   ],
   controllers: [ProjectsController],
   providers: [ProjectsService, TaskTypeDataMigrationService],

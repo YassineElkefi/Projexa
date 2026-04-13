@@ -32,6 +32,7 @@ import { ReplaceStatusTransitionsDto } from './dto/replace-status-transitions.dt
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { AdminService } from '../admin/admin.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Controller('projects')
 @UseGuards(JwtAuthGuard)
@@ -40,7 +41,10 @@ export class ProjectsController {
     private readonly projectsService: ProjectsService,
     @Inject(forwardRef(() => AdminService))
     private readonly adminService: AdminService,
+    private readonly notificationsService: NotificationsService,
   ) {}
+
+  // ──────────────────────────── PROJECTS ────────────────────────────
 
   @Post()
   @UseGuards(RolesGuard)
@@ -48,11 +52,23 @@ export class ProjectsController {
   async create(@Req() req: Request, @Body() dto: CreateProjectDto) {
     const actor = req.user as any;
     const project = await this.projectsService.create(actor, dto);
+
     await this.adminService.logActivity({
-      type:    'project_created',
+      type: 'project_created',
       message: `Project "${project.name}" was created`,
-      actor:   `${actor.firstName} ${actor.lastName}`,
+      actor: `${actor.firstName} ${actor.lastName}`,
     });
+
+    // Notify the assigned team lead
+    if (dto.teamLeadId && dto.teamLeadId !== actor.id) {
+      await this.notificationsService.notify({
+        userId: dto.teamLeadId,
+        type: 'project_assigned',
+        message: `You have been assigned as team lead for project "${project.name}"`,
+        payload: { projectId: project.id },
+      });
+    }
+
     return project;
   }
 
@@ -67,13 +83,28 @@ export class ProjectsController {
   }
 
   @Patch(':projectId')
-  update(
+  async update(
     @Req() req: Request,
     @Param('projectId', ParseIntPipe) projectId: number,
     @Body() dto: UpdateProjectDto,
   ) {
-    return this.projectsService.update(req.user as any, projectId, dto);
+    const actor = req.user as any;
+    const result = await this.projectsService.update(actor, projectId, dto);
+
+    // Notify new team lead if changed
+    if (dto.teamLeadId && dto.teamLeadId !== actor.id) {
+      await this.notificationsService.notify({
+        userId: dto.teamLeadId,
+        type: 'project_assigned',
+        message: `You are now the team lead for project "${result.name}"`,
+        payload: { projectId },
+      });
+    }
+
+    return result;
   }
+
+  // ──────────────────────────── MEMBERS ────────────────────────────
 
   @Get(':projectId/members/assignable')
   assignable(@Req() req: Request, @Param('projectId', ParseIntPipe) projectId: number) {
@@ -81,7 +112,7 @@ export class ProjectsController {
   }
 
   @Post(':projectId/members')
-  addMember(
+  async addMember(
     @Req() req: Request,
     @Param('projectId', ParseIntPipe) projectId: number,
     @Body() dto: AddProjectMemberDto,
@@ -89,17 +120,48 @@ export class ProjectsController {
     if (dto.userId == null && (dto.email == null || dto.email.trim() === '')) {
       throw new BadRequestException('Provide userId or email');
     }
-    return this.projectsService.addMember(req.user as any, projectId, dto);
+    const actor = req.user as any;
+    const result = await this.projectsService.addMember(actor, projectId, dto);
+
+    // Resolve the actual userId that was added
+    const addedUserId = dto.userId ?? result.members.find(
+      (m: any) => m.user?.email === dto.email?.trim().toLowerCase(),
+    )?.userId;
+
+    if (addedUserId && addedUserId !== actor.id) {
+      await this.notificationsService.notify({
+        userId: addedUserId,
+        type: 'member_added',
+        message: `You were added to project "${result.project.name}"`,
+        payload: { projectId },
+      });
+    }
+
+    return result;
   }
 
   @Delete(':projectId/members/:userId')
-  removeMember(
+  async removeMember(
     @Req() req: Request,
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('userId', ParseIntPipe) userId: number,
   ) {
-    return this.projectsService.removeMember(req.user as any, projectId, userId);
+    const actor = req.user as any;
+    const result = await this.projectsService.removeMember(actor, projectId, userId);
+
+    if (userId !== actor.id) {
+      await this.notificationsService.notify({
+        userId,
+        type: 'member_removed',
+        message: `You were removed from project "${result.project.name}"`,
+        payload: { projectId },
+      });
+    }
+
+    return result;
   }
+
+  // ──────────────────────────── CATEGORIES ────────────────────────────
 
   @Post(':projectId/categories')
   createCategory(
@@ -129,6 +191,8 @@ export class ProjectsController {
     return this.projectsService.deleteCategory(req.user as any, projectId, categoryId);
   }
 
+  // ──────────────────────────── STATUSES ────────────────────────────
+
   @Post(':projectId/statuses')
   createStatus(
     @Req() req: Request,
@@ -139,13 +203,30 @@ export class ProjectsController {
   }
 
   @Patch(':projectId/statuses/:statusId')
-  updateStatus(
+  async updateStatus(
     @Req() req: Request,
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('statusId', ParseIntPipe) statusId: number,
     @Body() dto: UpdateStatusDto,
   ) {
-    return this.projectsService.updateStatus(req.user as any, projectId, statusId, dto);
+    const actor = req.user as any;
+    const result = await this.projectsService.updateStatus(actor, projectId, statusId, dto);
+
+    // Notify all project members about the status change
+    const memberIds = result.members
+      .map((m: any) => m.userId)
+      .filter((id: number) => id !== actor.id);
+
+    for (const uid of memberIds) {
+      await this.notificationsService.notify({
+        userId: uid,
+        type: 'status_updated',
+        message: `A workflow status was updated in project "${result.project.name}"`,
+        payload: { projectId, statusId },
+      });
+    }
+
+    return result;
   }
 
   @Delete(':projectId/statuses/:statusId')
@@ -165,6 +246,8 @@ export class ProjectsController {
   ) {
     return this.projectsService.replaceTransitions(req.user as any, projectId, dto);
   }
+
+  // ──────────────────────────── TASKS ────────────────────────────
 
   @Get(':projectId/tasks/:taskId')
   getTask(
@@ -193,22 +276,58 @@ export class ProjectsController {
   }
 
   @Post(':projectId/tasks')
-  createTask(
+  async createTask(
     @Req() req: Request,
     @Param('projectId', ParseIntPipe) projectId: number,
     @Body() dto: CreateTaskDto,
   ) {
-    return this.projectsService.createTask(req.user as any, projectId, dto);
+    const actor = req.user as any;
+    const task = await this.projectsService.createTask(actor, projectId, dto);
+
+    // Notify assignee if different from creator
+    if (task.assigneeId && task.assigneeId !== actor.id) {
+      await this.notificationsService.notify({
+        userId: task.assigneeId,
+        type: 'task_assigned',
+        message: `You were assigned to task "${task.title}"`,
+        payload: { projectId, taskId: task.id },
+      });
+    }
+
+    return task;
   }
 
   @Patch(':projectId/tasks/:taskId')
-  updateTask(
+  async updateTask(
     @Req() req: Request,
     @Param('projectId', ParseIntPipe) projectId: number,
     @Param('taskId', ParseIntPipe) taskId: number,
     @Body() dto: UpdateTaskDto,
   ) {
-    return this.projectsService.updateTask(req.user as any, projectId, taskId, dto);
+    const actor = req.user as any;
+    const task = await this.projectsService.updateTask(actor, projectId, taskId, dto);
+
+    // Notify new assignee
+    if (dto.assigneeId != null && dto.assigneeId !== actor.id) {
+      await this.notificationsService.notify({
+        userId: dto.assigneeId,
+        type: 'task_assigned',
+        message: `You were assigned to task "${task.title}"`,
+        payload: { projectId, taskId: task.id },
+      });
+    }
+
+    // Notify assignee when status changes (if they exist and are not the actor)
+    if (dto.statusId != null && task.assigneeId && task.assigneeId !== actor.id) {
+      await this.notificationsService.notify({
+        userId: task.assigneeId,
+        type: 'task_status_changed',
+        message: `Task "${task.title}" status changed to "${task.status?.name}"`,
+        payload: { projectId, taskId: task.id, statusId: task.statusId },
+      });
+    }
+
+    return task;
   }
 
   @Delete(':projectId/tasks/:taskId')

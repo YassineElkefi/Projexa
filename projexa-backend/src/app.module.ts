@@ -8,6 +8,8 @@ import { UsersModule } from './users/users.module';
 import { MailModule } from './mail/mail.module';
 import { AdminModule } from './admin/admin.module';
 import { ProjectsModule } from './projects/projects.module';
+import { GatewayModule } from './gateway/gateway.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -35,7 +37,8 @@ import { ProjectsModule } from './projects/projects.module';
     MailModule,    
     AdminModule,
     ProjectsModule,
-
+    GatewayModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
